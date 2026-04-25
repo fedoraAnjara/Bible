@@ -17,7 +17,14 @@ import {
 type SidebarMode = 'none' | 'chapters' | 'verses';
 
 export default function LectureScreen() {
-  const { livre, chapitre } = useLocalSearchParams<{ livre: string; chapitre: string }>();
+  const { livre, chapitre, start, end } = useLocalSearchParams<{
+  livre: string;
+  chapitre: string;
+  start?: string;
+  end?: string;
+}>();
+const startVerse = start ? Number(start) : null;
+const endVerse = end ? Number(end) : null;
   const { lang, setLang } = useBible();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -73,6 +80,22 @@ export default function LectureScreen() {
     listRef.current?.scrollToIndex({ index: verseIndex, animated: true, viewOffset: 8 });
   };
 
+    useEffect(() => {
+    if (!startVerse || verses.length === 0) return;
+
+    const index = verses.findIndex((v) => Number(v.verse) === startVerse);
+
+    if (index !== -1) {
+        setTimeout(() => {
+        listRef.current?.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.15,
+        });
+        }, 500);
+    }
+    }, [startVerse, verses]);
+
   //Favori (appui long) ──────────────────────────────────────
   const handleLongPress = async (v: Verse) => {
     const id = `${v.book}-${v.chapter}-${v.verse}`;
@@ -92,16 +115,44 @@ export default function LectureScreen() {
   };
 
   //Rendu d'un verset ────────────────────────────────────────
-  const renderVerse = ({ item }: { item: Verse }) => (
+const renderVerse = ({ item }: { item: Verse }) => {
+  const verseNumber = Number(item.verse);
+
+  const isHighlighted =
+    startVerse !== null &&
+    endVerse !== null &&
+    verseNumber >= startVerse &&
+    verseNumber <= endVerse;
+
+  return (
     <TouchableOpacity
       activeOpacity={0.7}
       onLongPress={() => handleLongPress(item)}
-      style={styles.verseRow}
+      style={[
+        styles.verseRow,
+        isHighlighted && styles.highlightedVerseRow,
+      ]}
     >
-      <Text style={styles.verseNum}>{item.verse}</Text>
-      <Text style={styles.verseText}>{item.text}</Text>
+      <Text
+        style={[
+          styles.verseNum,
+          isHighlighted && styles.highlightedVerseNum,
+        ]}
+      >
+        {item.verse}
+      </Text>
+
+      <Text
+        style={[
+          styles.verseText,
+          isHighlighted && styles.highlightedVerseText,
+        ]}
+      >
+        {item.text}
+      </Text>
     </TouchableOpacity>
   );
+};
 
   //Sidebar Chapitres
   const ChapterSidebar = () => (
@@ -195,6 +246,14 @@ export default function LectureScreen() {
           <Text style={styles.toolBtnText}>V. 1 – {totalVerses}</Text>
         </TouchableOpacity>
       </View>
+
+      {startVerse && endVerse && (
+        <View style={styles.passageBanner}>
+            <Text style={styles.passageBannerText}>
+            Passage : {book?.name} {chapNum}:{startVerse}-{endVerse}
+            </Text>
+        </View>
+        )}
 
       {/* Liste des versets */}
       <FlatList
@@ -368,4 +427,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
+  passageBanner: {
+  backgroundColor: '#FFF0C2',
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderBottomWidth: StyleSheet.hairlineWidth,
+  borderBottomColor: '#D0B896',
+},
+
+passageBannerText: {
+  color: '#8B4513',
+  textAlign: 'center',
+  fontSize: 13,
+  fontWeight: '700',
+},
+
+highlightedVerseRow: {
+  backgroundColor: '#FFF3C4',
+  borderLeftWidth: 4,
+  borderLeftColor: '#8B4513',
+  padding: 10,
+  borderRadius: 10,
+},
+
+highlightedVerseNum: {
+  color: '#8B4513',
+  fontWeight: '900',
+},
+
+highlightedVerseText: {
+  color: '#2C1A0E',
+  fontWeight: '500',
+},
 });

@@ -9,6 +9,7 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
+import { TextInput } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useBible } from '../../context/BibleContext';
 import { getBooks } from '../../services/bibleService';
@@ -27,72 +28,72 @@ const CARD_HEIGHT = CARD_WIDTH * 1.4;
 
 // Remplace ici par ton BOOK_IMAGES complet
 const BOOK_IMAGES: Record<number, any> = {
-  1: { uri: 'https://tse1.explicit.bing.net/th/id/OIP.9Af5USctE0xJ_6Z9KaYUZgHaFb?w=1200&h=880&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  2: { uri: 'https://media.bible.art/468e644d-9954-4f72-91c1-9993635beb2d-compressed.jpg' },
-  3: { uri: 'https://www.shutterstock.com/image-photo/close-image-elijah-bringing-fire-600nw-2598540401.jpg' },
-  4: { uri: 'https://img.freepik.com/premium-photo/exodus-bible-moses-crossing-desert-with-israelites_740566-5229.jpg' },
-  5: { uri: 'https://th.bing.com/th/id/R.7d3e77a6a74e2361b3e31f7875fb8289?rik=1ITyd3x0j3KQ4A&riu=http%3a%2f%2fjudaicapedia.org%2fwp-content%2fuploads%2f2023%2f07%2fAdobeStock_612409895-scaled.jpeg&ehk=w%2bFfDH7bhvgBiYDfhzHo3Fvf0SZk6%2boHwr8X68iBIAI%3d&risl=&pid=ImgRaw&r=0' },
-  6: { uri: 'https://d3owcl6pd5zkqc.cloudfront.net/images/Joshua/Joshua.webp' },
-  7: { uri: 'https://media.bible.art/d1241ce4-8111-4ce8-bce0-bb2f52886832-compressed.jpg' },
-  8: { uri: 'https://i.pinimg.com/originals/88/cc/40/88cc40b4f1e4f966c082a6b6aad3e2ed.jpg' },
-  9: { uri: 'https://media.bible.art/b5781108-dd99-4d1a-99e0-897ece587783-compressed.jpg' },
-  10: { uri: 'https://img.freepik.com/fotos-premium/realistisches-bild-biblische-figur-koenig-saul-in-der-burg_968799-928.jpg' },
-  11: { uri: 'https://tse4.mm.bing.net/th/id/OIP.CKkD52Y68kEvA6UCIss2SwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3' },
-  12: { uri: 'https://media.bible.art/0257ed57-fa6a-4793-9273-a62565fbb294-thumbnail.jpg' },
-  13: { uri: 'https://preview.redd.it/gods-breath-of-life-v0-9wcqbsbqvtzb1.jpg?auto=webp&s=75e9da5f4b9ba49031445c5c664349295df8ed69' },
-  14: { uri: 'https://tse2.mm.bing.net/th/id/OIP.ACWFpgkF-csIQZxcOgSiAgHaHa?w=1080&h=1080&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  15: { uri: 'https://www.estanabiblia.com.br/wp-content/uploads/2024/12/esdras-5-a-retomada-da-construcao-do-templo-1024x585.jpg' },
-  16: { uri: 'https://tse2.mm.bing.net/th/id/OIP.3B4tjj-WDXdahZ-431d1dwHaHa?w=512&h=512&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  17: { uri: 'https://wol.jw.org/fr/wol/mp/r30/lp-f/lfb/2017/648' },
-  18: { uri: 'https://i.pinimg.com/736x/82/a4/d4/82a4d463c2f74eaaabe4e566733ffe49.jpg' },
-  19: { uri: 'https://media.bible.art/65df42c7-3ab5-4470-9694-6d66abdb52b2-compressed.jpg' },
-  20: { uri: 'https://i.pinimg.com/1200x/64/b7/f7/64b7f7f01c5ad3608ab9f28900b510a0.jpg' },
-  21: { uri: 'https://images.nightcafe.studio/jobs/ddqBALEts2N9Lixtob7M/ddqBALEts2N9Lixtob7M--0--qo1mo.jpg?tr=w-1600,c-at_max' },
-  22: { uri: 'https://faithpot.b-cdn.net/wp-content/uploads/2024/11/wedding-traditions-bible-770x404.jpg' },
-  23: { uri: 'https://wol.jw.org/ssp/wol/mp/r388/lp-lse/mwb21/2021/720' },
-  24: { uri: 'https://i.pinimg.com/736x/e5/31/a3/e531a3319b9e887009104f9902ff5e38--le-proph%C3%A8te-book-images.jpg' },
-  25: { uri: 'https://i.pinimg.com/736x/27/45/b0/2745b0776cd65b1b87cf7519741ef0c2.jpg' },
-  26: { uri: 'https://d3owcl6pd5zkqc.cloudfront.net/images/Ezekiel/Ezekiel_6_1200x1200.webp' },
-  27: { uri: 'https://www.gracefilledpathways.com/wp-content/uploads/2023/10/DALL%C2%B7E-2024-04-15-13.19.08-Create-a-powerful-and-inspiring-image-for-Daniel_-Faith-in-the-Lions-Den.-The-image-should-portray-Daniel-inside-the-lions-den-standing-calmly-wi.webp' },
-  28: { uri: 'https://i.pinimg.com/736x/12/75/42/12754276fb821720adc169ea2a64b7fb.jpg' },
-  29: { uri: 'https://www.learnreligions.com/thmb/jPu5s-SgL5lUr98StwwKI2utUuo=/2121x1414/filters:fill(auto,1)/BookofJoel-743694041-588ab8d6a01c497190fa2c721a48cad8.jpg' },
-  30: { uri: 'https://d3owcl6pd5zkqc.cloudfront.net/images/Amos/Amos_5.webp' },
-  31: { uri: 'https://tse1.mm.bing.net/th/id/OIP.HCuT8dWpxNNvqtPYunjWvgHaHa?rs=1&pid=ImgDetMain&o=7&rm=3' },
-  32: { uri: 'https://tse3.mm.bing.net/th/id/OIP.S1kExOoHYlkiYk74eCmynwHaFr?rs=1&pid=ImgDetMain&o=7&rm=3' },
-  33: { uri: 'https://i.pinimg.com/736x/b8/35/4e/b8354eca3e98d0851151c8382636d36f.jpg' },
-  34: { uri: 'https://tse3.mm.bing.net/th/id/OIP.mUMgnwi7mndV4n00WU9bmwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3' },
-  35: { uri: 'https://i.pinimg.com/736x/7c/19/da/7c19dac1dbe1a386ca3d0f6613831667.jpg' },
-  36: { uri: 'https://i.pinimg.com/736x/5e/ba/5d/5eba5d7e72af69af057b406d1920d681.jpg' },
-  37: { uri: 'https://media.bible.art/76410fb4-2e43-4eea-bee3-c74e11ab1c1c-compressed.jpg' },
-  38: { uri: 'https://www.biblespoir.com/wp-content/uploads/2023/02/Zacharie-450x450.jpg' },
-  39: { uri: 'https://assets.churchofjesuschrist.org/053a47b41c9b56d4a95fd51705d5bd0b3aea5c47' },
-  40: { uri: 'https://i.pinimg.com/736x/11/ff/d2/11ffd2b654f1646dad70ce8769b64b70.jpg' },
-  41: { uri: 'https://i.pinimg.com/736x/0c/d1/d9/0cd1d9ed7de34ee1789fb30af4c7ccff.jpg' },
-  42: { uri: 'https://i.pinimg.com/736x/47/62/c8/4762c894ef801b70c02952b12faded9c.jpg' },
-  43: { uri: 'https://i.pinimg.com/736x/42/24/cb/4224cba7ef46c761f2642d85f5ffdcab.jpg' },
-  44: { uri: 'https://tse3.mm.bing.net/th/id/OIP.lCb5RoRpKuvTGCAZCbesuAHaE7?rs=1&pid=ImgDetMain&o=7&rm=3' },
-  45: { uri: 'https://i.pinimg.com/1200x/e6/84/57/e68457a9e30a6a212b0a23eddc7d2df7.jpg' },
-  46: { uri: 'https://i.pinimg.com/736x/ae/e1/52/aee152656a51a574af419adca0b02567.jpg' },
-  47: { uri: 'https://i.pinimg.com/736x/ff/2b/aa/ff2baaee48b0dd830e480648a349aeab.jpg' },
-  48: { uri: 'https://i.pinimg.com/736x/4e/7b/7a/4e7b7ae81517167ff7937d72a0dfc0d4.jpg' },
-  49: { uri: 'https://tse2.mm.bing.net/th/id/OIP.UDKpvXiNIHqEoZWZAvtlowHaHa?w=1024&h=1024&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  50: { uri: 'https://i.pinimg.com/236x/e5/67/62/e5676227898b1848801893fb4e64b591--small-rooms-sau.jpg' },
-  51: { uri: 'https://i.pinimg.com/736x/d8/07/12/d807126e15224660ec46c598cdff9862.jpg' },
-  52: { uri: 'https://i.pinimg.com/736x/b0/1d/16/b01d1600319af68bd0c4471b0b7bce92.jpg' },
-  53: { uri: 'https://i.pinimg.com/736x/6d/84/1a/6d841a5bbd25e5e0a20b6eba6c84bc07.jpg' },
-  54: { uri: 'https://tse3.mm.bing.net/th/id/OIP.Nanx6yQ14dnzKWPPfaGafAHaHa?w=736&h=736&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  55: { uri: 'https://tse1.explicit.bing.net/th/id/OIP.tCkq5NUyXf9ws2sJr1oX8gHaHa?w=600&h=600&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  56: { uri: 'https://i.pinimg.com/1200x/df/ea/47/dfea4769dd1b45373de77ece51132496.jpg' },
-  57: { uri: 'https://i.pinimg.com/1200x/9f/9e/ad/9f9ead991e1ee6cb704db2687091dc62.jpg' },
-  58: { uri: 'https://tse3.mm.bing.net/th/id/OIP.WnFVMKxsM9IRvx_h4m5KZQHaHa?w=736&h=736&rs=1&pid=ImgDetMain&o=7&rm=3' },
-  59: { uri: 'https://i.pinimg.com/1200x/b4/3a/18/b43a18f26a73624de73d2cd72e1e7154.jpg' },
-  60: { uri: 'https://i.pinimg.com/736x/f8/b1/58/f8b1587244d312ac694765aa6417e2a0.jpg' },
-  61: { uri: 'https://i.pinimg.com/736x/93/1e/8c/931e8c5e4f5d1e2cb4b191f23b020b49.jpg' },
-  62: { uri: 'https://i.pinimg.com/1200x/5f/0d/a3/5f0da3b28cff58feaede64d7cfcdf4fb.jpg' },
-  63: { uri: 'https://i.pinimg.com/736x/6b/19/0f/6b190fb516b3bf87bee0325480cc011a.jpg' },
-  64: { uri: 'https://i.pinimg.com/736x/1b/4f/59/1b4f598808773d8f3acf9846f9ac99e7.jpg' },
-  65: { uri: 'https://th.bing.com/th/id/R.5bab356dc04aef219514c4eebd114e9b?rik=i24u8jrukZyGuw&riu=http%3a%2f%2fpredications.p.r.pic.centerblog.net%2fdcccd3cd.jpg&ehk=xjOINy8THSeB8ftbFz2QetUbgXURZlhBOB4FFz0XN2g%3d&risl=&pid=ImgRaw&r=0' },
-  66: { uri: 'https://i.pinimg.com/736x/06/aa/b0/06aab09cfa28f8be457f74f8e85dd5ae.jpg' },
+  1:  require('../../assets/images/books/1.jpg'),
+  2:  require('../../assets/images/books/2.jpg'),
+  3:  require('../../assets/images/books/3.jpg'),
+  4:  require('../../assets/images/books/4.jpg'),
+  5:  require('../../assets/images/books/5.jpg'),
+  6:  require('../../assets/images/books/6.jpg'),
+  7:  require('../../assets/images/books/7.jpg'),
+  8:  require('../../assets/images/books/8.jpg'),
+  9:  require('../../assets/images/books/9.jpg'),
+  10: require('../../assets/images/books/10.jpg'),
+  11: require('../../assets/images/books/11.jpg'),
+  12: require('../../assets/images/books/12.jpg'),
+  13: require('../../assets/images/books/13.jpg'),
+  14: require('../../assets/images/books/14.jpg'),
+  15: require('../../assets/images/books/15.jpg'),
+  16: require('../../assets/images/books/16.jpg'),
+  17: require('../../assets/images/books/17.jpg'),
+  18: require('../../assets/images/books/18.jpg'),
+  19: require('../../assets/images/books/19.jpg'),
+  20: require('../../assets/images/books/20.jpg'),
+  21: require('../../assets/images/books/21.jpg'),
+  22: require('../../assets/images/books/22.jpg'),
+  23: require('../../assets/images/books/23.jpg'),
+  24: require('../../assets/images/books/24.jpg'),
+  25: require('../../assets/images/books/25.jpg'),
+  26: require('../../assets/images/books/26.jpg'),
+  27: require('../../assets/images/books/27.jpg'),
+  28: require('../../assets/images/books/28.jpg'),
+  29: require('../../assets/images/books/29.jpg'),
+  30: require('../../assets/images/books/30.jpg'),
+  31: require('../../assets/images/books/31.jpg'),
+  32: require('../../assets/images/books/32.jpg'),
+  33: require('../../assets/images/books/33.jpg'),
+  34: require('../../assets/images/books/34.jpg'),
+  35: require('../../assets/images/books/35.jpg'),
+  36: require('../../assets/images/books/36.jpg'),
+  37: require('../../assets/images/books/37.jpg'),
+  38: require('../../assets/images/books/38.jpg'),
+  39: require('../../assets/images/books/39.jpg'),
+  40: require('../../assets/images/books/40.jpg'),
+  41: require('../../assets/images/books/41.jpg'),
+  42: require('../../assets/images/books/42.jpg'),
+  43: require('../../assets/images/books/43.jpg'),
+  44: require('../../assets/images/books/44.jpg'),
+  45: require('../../assets/images/books/45.jpg'),
+  46: require('../../assets/images/books/46.jpg'),
+  47: require('../../assets/images/books/47.jpg'),
+  48: require('../../assets/images/books/48.jpg'),
+  49: require('../../assets/images/books/49.jpg'),
+  50: require('../../assets/images/books/50.jpg'),
+  51: require('../../assets/images/books/51.jpg'),
+  52: require('../../assets/images/books/52.jpg'),
+  53: require('../../assets/images/books/53.jpg'),
+  54: require('../../assets/images/books/54.jpg'),
+  55: require('../../assets/images/books/55.jpg'),
+  56: require('../../assets/images/books/56.jpg'),
+  57: require('../../assets/images/books/57.jpg'),
+  58: require('../../assets/images/books/58.jpg'),
+  59: require('../../assets/images/books/59.jpg'),
+  60: require('../../assets/images/books/60.jpg'),
+  61: require('../../assets/images/books/61.jpg'),
+  62: require('../../assets/images/books/62.jpg'),
+  63: require('../../assets/images/books/63.jpg'),
+  64: require('../../assets/images/books/64.jpg'),
+  65: require('../../assets/images/books/65.jpg'),
+  66: require('../../assets/images/books/66.jpg'),
 };
 
 const BOOK_SUMMARIES: Record<number, { fr: string; en: string }> = {
@@ -250,7 +251,7 @@ function BookCard({
       <Animated.View style={[styles.card, frontStyle]}>
         <Image
           source={BOOK_IMAGES[item.book]}
-          style={StyleSheet.absoluteFillObject}
+          style={styles.cardImage}
           resizeMode="cover"
         />
 
@@ -302,10 +303,12 @@ function BookCard({
 }
 
 export default function LivresScreen() {
+  const [search, setSearch] = useState('');
   const { lang } = useBible();
   const router = useRouter();
 
   const books = useMemo(() => getBooks(lang), [lang]);
+  
 
   const oldTestament = useMemo(
     () => books.filter((book) => book.book <= 39),
@@ -315,6 +318,16 @@ export default function LivresScreen() {
   const newTestament = useMemo(
     () => books.filter((book) => book.book >= 40),
     [books]
+  );
+
+  const filteredOT = useMemo(
+    () => oldTestament.filter(b => b.name.toLowerCase().includes(search.toLowerCase())),
+    [oldTestament, search]
+  );
+
+  const filteredNT = useMemo(
+    () => newTestament.filter(b => b.name.toLowerCase().includes(search.toLowerCase())),
+    [newTestament, search]
   );
 
   const goToBook = useCallback(
@@ -346,39 +359,60 @@ export default function LivresScreen() {
         }}
       />
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      >
-        <SectionHeader
-          label={lang === 'fr' ? 'Ancien Testament' : 'Old Testament'}
-          isOT={true}
-        />
+<ScrollView
+  style={styles.container}
+  contentContainerStyle={styles.list}
+  showsVerticalScrollIndicator={false}
+>
+  {/* Barre de recherche */}
+  <View style={styles.searchContainer}>
+    <TextInput
+      style={styles.searchInput}
+      placeholder={lang === 'fr' ? 'Rechercher un livre...' : 'Search a book...'}
+      placeholderTextColor="#A08060"
+      value={search}
+      onChangeText={setSearch}
+      clearButtonMode="while-editing"
+    />
+  </View>
 
-        <FlatList
-          data={oldTestament}
-          keyExtractor={(item) => String(item.book)}
-          renderItem={renderBook}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          scrollEnabled={false}
-        />
+  {/* Ancien Testament — caché si aucun résultat */}
+  {filteredOT.length > 0 && (
+    <>
+      <SectionHeader label={lang === 'fr' ? 'Ancien Testament' : 'Old Testament'} isOT={true} />
+      <FlatList
+        data={filteredOT}
+        keyExtractor={(item) => String(item.book)}
+        renderItem={renderBook}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        scrollEnabled={false}
+      />
+    </>
+  )}
 
-        <SectionHeader
-          label={lang === 'fr' ? 'Nouveau Testament' : 'New Testament'}
-          isOT={false}
-        />
+  {/* Nouveau Testament — caché si aucun résultat */}
+  {filteredNT.length > 0 && (
+    <>
+      <SectionHeader label={lang === 'fr' ? 'Nouveau Testament' : 'New Testament'} isOT={false} />
+      <FlatList
+        data={filteredNT}
+        keyExtractor={(item) => String(item.book)}
+        renderItem={renderBook}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        scrollEnabled={false}
+      />
+    </>
+  )}
 
-        <FlatList
-          data={newTestament}
-          keyExtractor={(item) => String(item.book)}
-          renderItem={renderBook}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          scrollEnabled={false}
-        />
-      </ScrollView>
+  {/* Aucun résultat */}
+  {filteredOT.length === 0 && filteredNT.length === 0 && (
+    <Text style={styles.noResult}>
+      {lang === 'fr' ? 'Aucun livre trouvé' : 'No book found'}
+    </Text>
+  )}
+</ScrollView>
     </>
   );
 }
@@ -455,8 +489,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    backgroundColor: '#1A1205',
   },
-
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.38)',
@@ -581,4 +620,25 @@ const styles = StyleSheet.create({
     color: '#3A3028',
     fontSize: 9,
   },
+  searchContainer: {
+  backgroundColor: '#F5ECD7',
+  borderRadius: 14,
+  marginBottom: 4,
+  marginTop: 8,
+  paddingHorizontal: 14,
+  borderWidth: 1,
+  borderColor: '#D4B896',
+},
+searchInput: {
+  height: 46,
+  fontSize: 15,
+  color: '#3B2A1A',
+},
+noResult: {
+  textAlign: 'center',
+  color: '#A08060',
+  marginTop: 60,
+  fontSize: 15,
+  fontStyle: 'italic',
+},
 });
