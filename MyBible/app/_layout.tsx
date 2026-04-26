@@ -1,24 +1,43 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+// app/_layout.tsx
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { BibleProvider, useBible } from '../context/BibleContext';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootStack() {
+  const { lang } = useBible();
+  const title = lang === 'fr' ? 'La Parole de Dieu' : 'The Word of God';
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="dark" />
-    </ThemeProvider>
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: '#EDE0C0' },
+        headerTintColor: '#5C3D0E',
+        headerTitleStyle: { fontWeight: '600' },
+        headerShadowVisible: true,
+      }}
+    >
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          headerShown: true,
+          headerTitle: title,
+        }}
+      />
+      <Stack.Screen name="plans/[id]" options={{ headerShown: true }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <BibleProvider>
+      <ThemeProvider value={DefaultTheme}>
+        <RootStack />
+        <StatusBar style="dark" />
+      </ThemeProvider>
+    </BibleProvider>
   );
 }

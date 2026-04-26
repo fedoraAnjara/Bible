@@ -1,10 +1,16 @@
 import {
-  View, Text, StyleSheet, TouchableOpacity,
-  Dimensions, FlatList, StatusBar,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  FlatList,
+  StatusBar,
+  Animated,
 } from 'react-native';
-import { useRouter, Stack, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { useBible } from '../../context/BibleContext';
-import { useCallback, useState, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadLastPosition, loadFavorites } from '../../services/storageService';
 import type { LastPosition, Favorite } from '../../services/storageService';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -27,181 +33,114 @@ const P = {
   azur: '#1A3050',
 };
 
-const VERSE_DU_JOUR = [
-  { ref: 'Jean 3:16', text: "Car Dieu a tant aimé le monde qu'il a donné son Fils unique, afin que quiconque croit en lui ne périsse point, mais qu'il ait la vie éternelle." },
-  { ref: 'Philippiens 4:13', text: 'Je puis tout par celui qui me fortifie.' },
-  { ref: 'Psaumes 23:1', text: "L'Éternel est mon berger : je ne manquerai de rien." },
-  { ref: 'Romains 8:28', text: 'Toutes choses concourent au bien de ceux qui aiment Dieu.' },
-  { ref: 'Josué 1:9', text: "Sois fort et courageux. Ne t'effraie point, car l'Éternel, ton Dieu, est avec toi." },
-  { ref: 'Matthieu 11:28', text: 'Venez à moi, vous tous qui êtes fatigués et chargés, et je vous donnerai du repos.' },
-  { ref: 'Ésaïe 40:31', text: "Ceux qui se confient en l'Éternel renouvellent leur force. Ils prennent le vol comme les aigles." },
-];
+const T = {
+  fr: {
+    verseTag: 'Verset du jour',
+    parabolTag: 'Parabole',
+    miracleTag: 'Miracle',
+    favoriTag: 'Favori',
+    lirePassage: 'Lire le passage',
+    lireChapter: 'Lire le chapitre',
+    lireBible: 'Lire la Bible',
+    reprendre: 'Reprendre',
+    swipeHint: 'Faites glisser pour parcourir',
+    parametres: 'Paramètres',
+    meditation: 'Une parole pour méditer maintenant',
+  },
+  en: {
+    verseTag: 'Verse of the day',
+    parabolTag: 'Parable',
+    miracleTag: 'Miracle',
+    favoriTag: 'Favourite',
+    lirePassage: 'Read passage',
+    lireChapter: 'Read chapter',
+    lireBible: 'Read the Bible',
+    reprendre: 'Resume',
+    swipeHint: 'Swipe to explore',
+    parametres: 'Settings',
+    meditation: 'A word to meditate on now',
+  },
+};
 
-const PARABOLES = [
-  {
-    titre: 'Le Fils prodigue',
-    ref: 'Luc 15:11-32',
-    resume: "Un père accueille avec joie son fils perdu qui revient repentant. Image de la grâce infinie de Dieu.",
-    book: 42,
-    chapter: 15,
-    startVerse: 11,
-    endVerse: 32,
-  },
-  {
-    titre: 'Le Bon Samaritain',
-    ref: 'Luc 10:25-37',
-    resume: "Un étranger secourt un blessé ignoré par les religieux. Jésus redéfinit qui est notre prochain.",
-    book: 42,
-    chapter: 10,
-    startVerse: 25,
-    endVerse: 37,
-  },
-  {
-    titre: 'Le Semeur',
-    ref: 'Matthieu 13:1-23',
-    resume: "La Parole de Dieu tombe sur différents types de cœurs. Certains portent du fruit, d'autres non.",
-    book: 40,
-    chapter: 13,
-    startVerse: 1,
-    endVerse: 23,
-  },
-  {
-    titre: 'Les Talents',
-    ref: 'Matthieu 25:14-30',
-    resume: "Trois serviteurs reçoivent des talents. Fidélité dans le peu mène à la récompense.",
-    book: 40,
-    chapter: 25,
-    startVerse: 14,
-    endVerse: 30,
-  },
-  {
-    titre: 'La Brebis Perdue',
-    ref: 'Luc 15:1-7',
-    resume: "Le berger quitte les 99 pour chercher la brebis perdue. Dieu se réjouit pour chaque pécheur repentant.",
-    book: 42,
-    chapter: 15,
-    startVerse: 1,
-    endVerse: 7,
-  },
-  {
-    titre: 'Le Pharisien et le Péager',
-    ref: 'Luc 18:9-14',
-    resume: "L'humilité du péager est exaltée, l'orgueil du pharisien est condamné.",
-    book: 42,
-    chapter: 18,
-    startVerse: 9,
-    endVerse: 14,
-  },
-  {
-    titre: 'Les Dix Vierges',
-    ref: 'Matthieu 25:1-13',
-    resume: "Cinq vierges sages préparent leurs lampes, cinq insensées sont exclues. Soyez prêts.",
-    book: 40,
-    chapter: 25,
-    startVerse: 1,
-    endVerse: 13,
-  },
-  {
-    titre: 'Le Grain de Sénevé',
-    ref: 'Matthieu 13:31-32',
-    resume: "Le royaume de Dieu commence petit comme une graine mais devient grand comme un arbre.",
-    book: 40,
-    chapter: 13,
-    startVerse: 31,
-    endVerse: 32,
-  },
-];
+const VERSE_DU_JOUR = {
+  fr: [
+    { ref: 'Jean 3:16', text: 'Car Dieu a tant aimé le monde qu’il a donné son Fils unique, afin que quiconque croit en lui ne périsse point, mais qu’il ait la vie éternelle.', book: 43, chapter: 3, verse: 16 },
+    { ref: 'Philippiens 4:13', text: 'Je puis tout par celui qui me fortifie.', book: 50, chapter: 4, verse: 13 },
+    { ref: 'Psaumes 23:1', text: 'L’Éternel est mon berger : je ne manquerai de rien.', book: 19, chapter: 23, verse: 1 },
+    { ref: 'Romains 8:28', text: 'Toutes choses concourent au bien de ceux qui aiment Dieu.', book: 45, chapter: 8, verse: 28 },
+    { ref: 'Josué 1:9', text: 'Sois fort et courageux. Ne t’effraie point, car l’Éternel est avec toi.', book: 6, chapter: 1, verse: 9 },
+    { ref: 'Matthieu 11:28', text: 'Venez à moi, vous tous qui êtes fatigués, et je vous donnerai du repos.', book: 40, chapter: 11, verse: 28 },
+    { ref: 'Ésaïe 40:31', text: 'Ceux qui se confient en l’Éternel renouvellent leur force.', book: 23, chapter: 40, verse: 31 },
+  ],
+  en: [
+    { ref: 'John 3:16', text: 'For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.', book: 43, chapter: 3, verse: 16 },
+    { ref: 'Philippians 4:13', text: 'I can do all things through Christ which strengtheneth me.', book: 50, chapter: 4, verse: 13 },
+    { ref: 'Psalm 23:1', text: 'The LORD is my shepherd; I shall not want.', book: 19, chapter: 23, verse: 1 },
+    { ref: 'Romans 8:28', text: 'All things work together for good to them that love God.', book: 45, chapter: 8, verse: 28 },
+    { ref: 'Joshua 1:9', text: 'Be strong and of a good courage; be not afraid, for the LORD thy God is with thee.', book: 6, chapter: 1, verse: 9 },
+    { ref: 'Matthew 11:28', text: 'Come unto me, all ye that labour and are heavy laden, and I will give you rest.', book: 40, chapter: 11, verse: 28 },
+    { ref: 'Isaiah 40:31', text: 'They that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles.', book: 23, chapter: 40, verse: 31 },
+  ],
+};
 
-const MIRACLES = [
-  {
-    titre: 'Les Noces de Cana',
-    ref: 'Jean 2:1-11',
-    resume: "Jésus transforme l'eau en vin. Son premier miracle révèle sa gloire divine.",
-    book: 43,
-    chapter: 2,
-    startVerse: 1,
-    endVerse: 11,
-  },
-  {
-    titre: 'Multiplication des Pains',
-    ref: 'Jean 6:1-14',
-    resume: "5 pains et 2 poissons nourrissent 5000 hommes. Jésus, pain de vie, subvient à tout besoin.",
-    book: 43,
-    chapter: 6,
-    startVerse: 1,
-    endVerse: 14,
-  },
-  {
-    titre: 'Résurrection de Lazare',
-    ref: 'Jean 11:1-44',
-    resume: 'Lazare mort depuis 4 jours ressuscite. Jésus déclare : "Je suis la résurrection et la vie."',
-    book: 43,
-    chapter: 11,
-    startVerse: 1,
-    endVerse: 44,
-  },
-  {
-    titre: 'La Tempête Apaisée',
-    ref: 'Marc 4:35-41',
-    resume: 'Jésus commande aux vents et à la mer. Les disciples s\'écrient : "Qui est-il donc ?"',
-    book: 41,
-    chapter: 4,
-    startVerse: 35,
-    endVerse: 41,
-  },
-  {
-    titre: 'La Marche sur les Eaux',
-    ref: 'Matthieu 14:22-33',
-    resume: 'Jésus marche sur la mer et saisit Pierre qui coule. "Homme de peu de foi, pourquoi as-tu douté ?"',
-    book: 40,
-    chapter: 14,
-    startVerse: 22,
-    endVerse: 33,
-  },
-  {
-    titre: 'Les Dix Lépreux Guéris',
-    ref: 'Luc 17:11-19',
-    resume: "Dix lépreux sont guéris mais un seul revient remercier. La gratitude est rare et précieuse.",
-    book: 42,
-    chapter: 17,
-    startVerse: 11,
-    endVerse: 19,
-  },
-  {
-    titre: "L'Aveugle de Naissance",
-    ref: 'Jean 9:1-41',
-    resume: 'Jésus guérit un aveugle de naissance avec de la boue. "Je suis la lumière du monde."',
-    book: 43,
-    chapter: 9,
-    startVerse: 1,
-    endVerse: 41,
-  },
-  {
-    titre: 'La Pêche Miraculeuse',
-    ref: 'Luc 5:1-11',
-    resume: "Après une nuit sans rien, les filets débordent sur la parole de Jésus. Pierre tombe à genoux.",
-    book: 42,
-    chapter: 5,
-    startVerse: 1,
-    endVerse: 11,
-  },
-];
+const PARABOLES = {
+  fr: [
+    { titre: 'Le Fils prodigue', theme: 'Grâce & Pardon', ref: 'Luc 15:11-32', resume: 'Un père court vers son fils égaré qui revient repentant. Cette parabole révèle le cœur du Père céleste.', quote: 'Mon fils que voici était mort, et il est revenu à la vie ; il était perdu, et il est retrouvé.', quoteRef: 'Luc 15:24', book: 42, chapter: 15, startVerse: 11, endVerse: 32 },
+    { titre: 'Le Bon Samaritain', theme: 'Amour du Prochain', ref: 'Luc 10:25-37', resume: 'Un étranger méprisé secourt un blessé laissé pour mort. Jésus redéfinit qui est notre prochain.', quote: 'Va, et toi, fais de même.', quoteRef: 'Luc 10:37', book: 42, chapter: 10, startVerse: 25, endVerse: 37 },
+    { titre: 'Le Semeur', theme: 'La Parole de Dieu', ref: 'Matthieu 13:1-23', resume: 'Quatre types de terrain, quatre destinées pour la même semence.', quote: 'Celui qui entend la parole et la comprend.', quoteRef: 'Mt 13:23', book: 40, chapter: 13, startVerse: 1, endVerse: 23 },
+  ],
+  en: [
+    { titre: 'The Prodigal Son', theme: 'Grace & Forgiveness', ref: 'Luke 15:11-32', resume: 'A father runs toward his lost son who returns repentant.', quote: 'This my son was dead, and is alive again.', quoteRef: 'Luke 15:24', book: 42, chapter: 15, startVerse: 11, endVerse: 32 },
+    { titre: 'The Good Samaritan', theme: 'Love of Neighbour', ref: 'Luke 10:25-37', resume: 'A despised stranger rescues a wounded man left for dead.', quote: 'Go and do thou likewise.', quoteRef: 'Luke 10:37', book: 42, chapter: 10, startVerse: 25, endVerse: 37 },
+    { titre: 'The Sower', theme: 'The Word of God', ref: 'Matthew 13:1-23', resume: 'Four types of ground, four destinies for the same seed.', quote: 'He that heareth the word, and understandeth it.', quoteRef: 'Mt 13:23', book: 40, chapter: 13, startVerse: 1, endVerse: 23 },
+  ],
+};
+
+const MIRACLES = {
+  fr: [
+    { titre: 'Les Noces de Cana', theme: 'Gloire révélée', ref: 'Jean 2:1-11', resume: 'Jésus transforme l’eau en vin lors d’un festin de noces.', quote: 'Il changea l’eau en vin.', quoteRef: 'Jean 2:11', book: 43, chapter: 2, startVerse: 1, endVerse: 11 },
+    { titre: 'La Tempête Apaisée', theme: 'Seigneur des éléments', ref: 'Marc 4:35-41', resume: 'Jésus commande aux vents et à la mer, et la tempête s’apaise.', quote: 'Silence ! Tais-toi !', quoteRef: 'Marc 4:39', book: 41, chapter: 4, startVerse: 35, endVerse: 41 },
+    { titre: 'La Marche sur les Eaux', theme: 'Foi & Doute', ref: 'Matthieu 14:22-33', resume: 'Jésus marche sur la mer vers ses disciples au cœur de la nuit.', quote: 'Homme de peu de foi, pourquoi as-tu douté ?', quoteRef: 'Mt 14:31', book: 40, chapter: 14, startVerse: 22, endVerse: 33 },
+  ],
+  en: [
+    { titre: 'Wedding at Cana', theme: 'Glory Revealed', ref: 'John 2:1-11', resume: 'Jesus turns water into wine at a wedding feast.', quote: 'He changed the water into wine.', quoteRef: 'John 2:11', book: 43, chapter: 2, startVerse: 1, endVerse: 11 },
+    { titre: 'Calming the Storm', theme: 'Lord of Creation', ref: 'Mark 4:35-41', resume: 'Jesus commands the wind and sea, and there is calm.', quote: 'Peace, be still.', quoteRef: 'Mark 4:39', book: 41, chapter: 4, startVerse: 35, endVerse: 41 },
+    { titre: 'Walking on Water', theme: 'Faith & Doubt', ref: 'Matthew 14:22-33', resume: 'Jesus walks on the sea toward the disciples.', quote: 'O thou of little faith, wherefore didst thou doubt?', quoteRef: 'Mt 14:31', book: 40, chapter: 14, startVerse: 22, endVerse: 33 },
+  ],
+};
+
+type VerseData = {
+  ref: string;
+  text: string;
+  book: number;
+  chapter: number;
+  verse: number;
+};
 
 type PassageData = {
   titre: string;
+  theme: string;
   ref: string;
   resume: string;
+  quote: string;
+  quoteRef: string;
   book: number;
   chapter: number;
   startVerse: number;
   endVerse: number;
 };
 
+type Translations = typeof T['fr'];
+
 type CardData =
-  | { type: 'verse'; data: typeof VERSE_DU_JOUR[0] }
+  | { type: 'verse'; data: VerseData }
   | { type: 'parabole'; data: PassageData }
   | { type: 'miracle'; data: PassageData }
   | { type: 'favori'; data: Favorite };
+
+function getRandomVerseIndex(lang: 'fr' | 'en') {
+  return Math.floor(Math.random() * VERSE_DU_JOUR[lang].length);
+}
 
 function Rule({ color = '#8B654060' }: { color?: string }) {
   return <View style={[styles.rule, { borderColor: color }]} />;
@@ -215,7 +154,7 @@ function Dropcap({ letter, color }: { letter: string; color: string }) {
   );
 }
 
-function VerseCard({ data }: { data: typeof VERSE_DU_JOUR[0] }) {
+function VerseCard({ data, t, onRead }: { data: VerseData; t: Translations; onRead: () => void }) {
   const firstLetter = data.text[0];
   const rest = data.text.slice(1);
 
@@ -224,8 +163,14 @@ function VerseCard({ data }: { data: typeof VERSE_DU_JOUR[0] }) {
       <View style={[styles.pageEdge, styles.pageEdgeLeft, { backgroundColor: P.parchmentDk }]} />
       <View style={[styles.pageEdge, styles.pageEdgeRight, { backgroundColor: P.parchmentDk }]} />
 
-      <View style={styles.cardInner}>
-        <Text style={[styles.categoryTag, { color: P.rubriq }]}>Verset du jour</Text>
+      <View style={styles.verseCardBox}>
+        <View style={styles.verseIconCircle}>
+          <Ionicons name="book-outline" size={30} color={P.rubriq} />
+        </View>
+
+        <Text style={[styles.categoryTag, { color: P.rubriq }]}>{t.verseTag}</Text>
+        <Text style={styles.verseTodaySub}>{t.meditation}</Text>
+
         <Rule />
 
         <View style={styles.verseBodyRow}>
@@ -234,92 +179,91 @@ function VerseCard({ data }: { data: typeof VERSE_DU_JOUR[0] }) {
         </View>
 
         <Rule />
+
         <Text style={styles.verseRef}>{data.ref}</Text>
-      </View>
-    </View>
-  );
-}
 
-function ParaboleCard({ data, onRead }: { data: PassageData; onRead: () => void }) {
-  return (
-    <View style={[styles.card, { backgroundColor: P.parchment }]}>
-      <View style={[styles.pageEdge, styles.pageEdgeLeft, { backgroundColor: '#E4D4A8' }]} />
-      <View style={[styles.pageEdge, styles.pageEdgeRight, { backgroundColor: '#E4D4A8' }]} />
-
-      <View style={styles.cardInner}>
-        <Text style={[styles.categoryTag, { color: P.verdeGris }]}>Parabole</Text>
-        <Rule color={P.sepia + '50'} />
-
-        <Text style={styles.passageTitle}>{data.titre}</Text>
-        <Text style={[styles.passageRef, { color: P.verdeGris }]}>{data.ref}</Text>
-
-        <View style={[styles.marginNote, { borderLeftColor: P.verdeGris + '60' }]}>
-          <Text style={[styles.marginText, { color: P.inkLight }]}>{data.resume}</Text>
-        </View>
-
-        <Rule color={P.sepia + '40'} />
-
-        <TouchableOpacity onPress={onRead} activeOpacity={0.6} style={styles.lireLink}>
-          <Text style={[styles.lireLinkText, { color: P.verdeGris }]}>Lire le passage</Text>
-          <Ionicons name="arrow-forward" size={12} color={P.verdeGris} />
+        <TouchableOpacity onPress={onRead} activeOpacity={0.75} style={styles.verseMainButton}>
+          <Text style={styles.verseMainButtonText}>{t.lirePassage}</Text>
+          <Ionicons name="arrow-forward" size={15} color={P.parchmentLt} />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-function MiracleCard({ data, onRead }: { data: PassageData; onRead: () => void }) {
+function PassageCard({
+  data,
+  onRead,
+  t,
+  type,
+}: {
+  data: PassageData;
+  onRead: () => void;
+  t: Translations;
+  type: 'parabole' | 'miracle';
+}) {
+  const color = type === 'parabole' ? P.verdeGris : P.azur;
+  const tag = type === 'parabole' ? t.parabolTag : t.miracleTag;
+
   return (
     <View style={[styles.card, { backgroundColor: P.parchment }]}>
-      <View style={[styles.pageEdge, styles.pageEdgeLeft, { backgroundColor: '#DDD0B0' }]} />
-      <View style={[styles.pageEdge, styles.pageEdgeRight, { backgroundColor: '#DDD0B0' }]} />
+      <View style={[styles.pageEdge, styles.pageEdgeLeft, { backgroundColor: P.parchmentDk }]} />
+      <View style={[styles.pageEdge, styles.pageEdgeRight, { backgroundColor: P.parchmentDk }]} />
 
       <View style={styles.cardInner}>
-        <Text style={[styles.categoryTag, { color: P.azur }]}>Miracle</Text>
+        <Text style={[styles.categoryTag, { color }]}>{tag}</Text>
         <Rule color={P.sepia + '50'} />
 
-        <Text style={styles.passageTitle}>{data.titre}</Text>
-        <Text style={[styles.passageRef, { color: P.azur }]}>{data.ref}</Text>
+        <Text style={[styles.themeLabel, { color: color + 'BB' }]}>
+          {data.theme.toUpperCase()}
+        </Text>
 
-        <View style={[styles.marginNote, { borderLeftColor: P.azur + '60' }]}>
-          <Text style={[styles.marginText, { color: P.inkLight }]}>{data.resume}</Text>
+        <Text style={styles.passageTitle}>{data.titre}</Text>
+        <Text style={[styles.passageRef, { color }]}>{data.ref}</Text>
+
+        <View style={[styles.marginNote, { borderLeftColor: color + '60' }]}>
+          <Text style={styles.marginText}>{data.resume}</Text>
+        </View>
+
+        <View style={[styles.quoteBlock, { borderColor: color + '40', backgroundColor: color + '08' }]}>
+          <Text style={[styles.quoteMarks, { color: color + '60' }]}>“</Text>
+          <Text style={styles.quoteText}>{data.quote}</Text>
+          <Text style={[styles.quoteRef, { color }]}>{data.quoteRef}</Text>
         </View>
 
         <Rule color={P.sepia + '40'} />
 
         <TouchableOpacity onPress={onRead} activeOpacity={0.6} style={styles.lireLink}>
-          <Text style={[styles.lireLinkText, { color: P.azur }]}>Lire le passage</Text>
-          <Ionicons name="arrow-forward" size={12} color={P.azur} />
+          <Text style={[styles.lireLinkText, { color }]}>{t.lirePassage}</Text>
+          <Ionicons name="arrow-forward" size={12} color={color} />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-function FavoriCard({ data, onRead }: { data: Favorite; onRead: () => void }) {
+function FavoriCard({ data, onRead, t }: { data: Favorite; onRead: () => void; t: Translations }) {
   return (
     <View style={[styles.card, { backgroundColor: P.parchmentLt }]}>
       <View style={[styles.pageEdge, styles.pageEdgeLeft, { backgroundColor: P.parchmentDk }]} />
       <View style={[styles.pageEdge, styles.pageEdgeRight, { backgroundColor: P.parchmentDk }]} />
 
       <View style={styles.cardInner}>
-        <Text style={[styles.categoryTag, { color: P.rubriqLt }]}>Favori</Text>
+        <Text style={[styles.categoryTag, { color: P.rubriqLt }]}>{t.favoriTag}</Text>
         <Rule />
 
         <Text style={[styles.passageTitle, { fontWeight: '400', fontSize: 16 }]}>
           {data.bookName} {data.chapter}:{data.verse}
         </Text>
 
-        <View style={styles.verseBodyRow}>
-          <Text style={[styles.verseBodyText, { fontSize: 17, lineHeight: 28 }]}>
-            {data.text}
-          </Text>
-        </View>
+        <Text style={[styles.verseBodyText, { fontSize: 17, lineHeight: 28 }]}>
+          {data.text}
+        </Text>
 
         <Rule />
 
         <TouchableOpacity onPress={onRead} activeOpacity={0.6} style={styles.lireLink}>
-          <Text style={[styles.lireLinkText, { color: P.rubriqLt }]}>Lire le chapitre</Text>
+          <Text style={[styles.lireLinkText, { color: P.rubriqLt }]}>{t.lireChapter}</Text>
           <Ionicons name="arrow-forward" size={12} color={P.rubriqLt} />
         </TouchableOpacity>
       </View>
@@ -328,76 +272,146 @@ function FavoriCard({ data, onRead }: { data: Favorite; onRead: () => void }) {
 }
 
 export default function AccueilScreen() {
+  const { lang } = useBible();
+  const t = T[lang];
   const router = useRouter();
+  const navigation = useNavigation<any>();
+
   const [lastPos, setLastPos] = useState<LastPosition | null>(null);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const listRef = useRef<FlatList>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [verseIndex, setVerseIndex] = useState(() => getRandomVerseIndex(lang));
+  const [refreshingVisual, setRefreshingVisual] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadLastPosition().then(setLastPos);
-      loadFavorites().then(setFavorites);
-    }, [])
-  );
+  const listRef = useRef<FlatList<CardData>>(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const loaderAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    setVerseIndex(getRandomVerseIndex(lang));
+  }, [lang]);
 
   const verseOfDay = useMemo(() => {
-    const day = Math.floor(Date.now() / 86400000);
-    return VERSE_DU_JOUR[day % VERSE_DU_JOUR.length];
-  }, []);
+    return VERSE_DU_JOUR[lang][verseIndex % VERSE_DU_JOUR[lang].length];
+  }, [lang, verseIndex]);
 
   const baseCards: CardData[] = useMemo(() => {
     const feed: CardData[] = [];
 
     feed.push({ type: 'verse', data: verseOfDay });
 
-    const maxItems = Math.max(PARABOLES.length, MIRACLES.length);
+    const paraboles = PARABOLES[lang];
+    const miracles = MIRACLES[lang];
+    const maxItems = Math.max(paraboles.length, miracles.length);
 
     for (let i = 0; i < maxItems; i++) {
-      if (i < PARABOLES.length) {
-        feed.push({ type: 'parabole', data: PARABOLES[i] });
-      }
-
-      if (i < MIRACLES.length) {
-        feed.push({ type: 'miracle', data: MIRACLES[i] });
-      }
+      if (i < paraboles.length) feed.push({ type: 'parabole', data: paraboles[i] });
+      if (i < miracles.length) feed.push({ type: 'miracle', data: miracles[i] });
     }
 
-    favorites.slice(0, 3).forEach((f) => {
-      feed.push({ type: 'favori', data: f });
-    });
+    favorites.slice(0, 3).forEach((f) => feed.push({ type: 'favori', data: f }));
 
     return feed;
-  }, [verseOfDay, favorites]);
+  }, [verseOfDay, favorites, lang]);
 
-  const cards = useMemo(() => [...baseCards, ...baseCards, ...baseCards], [baseCards]);
   const LOOP_OFFSET = baseCards.length;
+
+  const cards = useMemo(() => {
+    return [...baseCards, ...baseCards, ...baseCards];
+  }, [baseCards]);
+
+  const refreshAccueil = useCallback(
+    (changeVerse = false) => {
+      loadLastPosition().then(setLastPos);
+      loadFavorites().then(setFavorites);
+
+      if (changeVerse) {
+        setVerseIndex(getRandomVerseIndex(lang));
+      }
+
+      if (LOOP_OFFSET > 0) {
+        setTimeout(() => {
+          listRef.current?.scrollToIndex({
+            index: LOOP_OFFSET,
+            animated: false,
+          });
+        }, 100);
+      }
+    },
+    [LOOP_OFFSET, lang]
+  );
+
+  const animateRefresh = useCallback(() => {
+    setRefreshingVisual(true);
+
+    loaderAnim.setValue(0);
+
+    Animated.parallel([
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0.35,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(loaderAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setRefreshingVisual(false);
+    });
+
+    refreshAccueil(true);
+  }, [fadeAnim, loaderAnim, refreshAccueil]);
+
+    useFocusEffect(
+      useCallback(() => {
+        loadLastPosition().then(setLastPos);
+        loadFavorites().then(setFavorites);
+      }, [])
+    );
+
+    useEffect(() => {
+      const unsubscribe = navigation.addListener('tabPress', () => {
+        animateRefresh();
+      });
+
+      return unsubscribe;
+    }, [navigation, animateRefresh]);
 
   const onLayout = useCallback(() => {
     if (LOOP_OFFSET > 0) {
-      listRef.current?.scrollToIndex({ index: LOOP_OFFSET, animated: false });
-      setCurrentIndex(LOOP_OFFSET);
+      listRef.current?.scrollToIndex({
+        index: LOOP_OFFSET,
+        animated: false,
+      });
     }
   }, [LOOP_OFFSET]);
 
-  const onMomentumScrollEnd = useCallback((e: any) => {
-    const index = Math.round(e.nativeEvent.contentOffset.y / CARD_HEIGHT);
-    setCurrentIndex(index);
+  const onMomentumScrollEnd = useCallback(
+    (e: any) => {
+      const index = Math.round(e.nativeEvent.contentOffset.y / CARD_HEIGHT);
 
-    if (index <= 2) {
-      listRef.current?.scrollToIndex({
-        index: index + LOOP_OFFSET,
-        animated: false,
-      });
-      setCurrentIndex(index + LOOP_OFFSET);
-    } else if (index >= cards.length - 3) {
-      listRef.current?.scrollToIndex({
-        index: index - LOOP_OFFSET,
-        animated: false,
-      });
-      setCurrentIndex(index - LOOP_OFFSET);
-    }
-  }, [cards.length, LOOP_OFFSET]);
+      if (index <= 2) {
+        listRef.current?.scrollToIndex({
+          index: index + LOOP_OFFSET,
+          animated: false,
+        });
+      } else if (index >= cards.length - 3) {
+        listRef.current?.scrollToIndex({
+          index: index - LOOP_OFFSET,
+          animated: false,
+        });
+      }
+    },
+    [cards.length, LOOP_OFFSET]
+  );
 
   const goToPassage = (
     book: number,
@@ -419,12 +433,27 @@ export default function AccueilScreen() {
   const renderCard = ({ item }: { item: CardData }) => {
     switch (item.type) {
       case 'verse':
-        return <VerseCard data={item.data} />;
+        return (
+          <VerseCard
+            data={item.data}
+            t={t}
+            onRead={() =>
+              goToPassage(
+                item.data.book,
+                item.data.chapter,
+                item.data.verse,
+                item.data.verse
+              )
+            }
+          />
+        );
 
       case 'parabole':
         return (
-          <ParaboleCard
+          <PassageCard
+            type="parabole"
             data={item.data}
+            t={t}
             onRead={() =>
               goToPassage(
                 item.data.book,
@@ -438,8 +467,10 @@ export default function AccueilScreen() {
 
       case 'miracle':
         return (
-          <MiracleCard
+          <PassageCard
+            type="miracle"
             data={item.data}
+            t={t}
             onRead={() =>
               goToPassage(
                 item.data.book,
@@ -455,6 +486,7 @@ export default function AccueilScreen() {
         return (
           <FavoriCard
             data={item.data}
+            t={t}
             onRead={() =>
               goToPassage(
                 item.data.book,
@@ -468,29 +500,24 @@ export default function AccueilScreen() {
     }
   };
 
+  const spin = loaderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={P.parchmentDk} />
-
-      <Stack.Screen
-        options={{
-          title: 'La Parole de Dieu',
-          headerStyle: { backgroundColor: P.parchmentDk },
-          headerTintColor: P.ink,
-          headerTitleStyle: { fontWeight: '600' },
-          headerLeft: () => null,
-        }}
-      />
 
       <View style={styles.topBar}>
         <View style={styles.topRow}>
           <TouchableOpacity
             style={styles.btnPrimary}
-            onPress={() => router.push('/(tabs)/livres')}
+            onPress={() => router.push('/parametres')}
             activeOpacity={0.7}
           >
-            <Ionicons name="book-outline" size={15} color={P.parchmentLt} />
-            <Text style={styles.btnPrimaryText}>Lire la Bible</Text>
+            <Ionicons name="settings-outline" size={15} color={P.parchmentLt} />
+            <Text style={styles.btnPrimaryText}>{t.parametres}</Text>
           </TouchableOpacity>
 
           {lastPos ? (
@@ -501,38 +528,59 @@ export default function AccueilScreen() {
             >
               <Ionicons name="reload-outline" size={14} color={P.inkLight} />
               <Text style={styles.btnSecondaryText} numberOfLines={1}>
-                {lastPos.bookName} {lastPos.chapter}
+                {t.reprendre} · {lastPos.bookName} {lastPos.chapter}
               </Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.btnSecondary} activeOpacity={0.7}>
-              <Ionicons name="heart-outline" size={14} color={P.inkLight} />
-              <Text style={styles.btnSecondaryText}>Favoris</Text>
+            <TouchableOpacity
+              style={styles.btnSecondary}
+              onPress={() => router.push('/(tabs)/livres')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="book-outline" size={14} color={P.inkLight} />
+              <Text style={styles.btnSecondaryText}>{t.lireBible}</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        <Text style={styles.swipeHint}>Faites glisser pour parcourir</Text>
+        <Text style={styles.swipeHint}>{t.swipeHint}</Text>
       </View>
 
-      <FlatList
-        ref={listRef}
-        data={cards}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={renderCard}
-        pagingEnabled
-        showsVerticalScrollIndicator={false}
-        snapToInterval={CARD_HEIGHT}
-        decelerationRate="fast"
-        onLayout={onLayout}
-        onMomentumScrollEnd={onMomentumScrollEnd}
-        getItemLayout={(_, index) => ({
-          length: CARD_HEIGHT,
-          offset: CARD_HEIGHT * index,
-          index,
-        })}
-        onScrollToIndexFailed={() => {}}
-      />
+      {refreshingVisual && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.refreshBadge,
+            {
+              opacity: loaderAnim,
+              transform: [{ rotate: spin }],
+            },
+          ]}
+        >
+          <Ionicons name="refresh" size={22} color={P.rubriq} />
+        </Animated.View>
+      )}
+
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        <FlatList
+          ref={listRef}
+          data={cards}
+          keyExtractor={(_, i) => String(i)}
+          renderItem={renderCard}
+          pagingEnabled
+          showsVerticalScrollIndicator={false}
+          snapToInterval={CARD_HEIGHT}
+          decelerationRate="fast"
+          onLayout={onLayout}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          getItemLayout={(_, index) => ({
+            length: CARD_HEIGHT,
+            offset: CARD_HEIGHT * index,
+            index,
+          })}
+          onScrollToIndexFailed={() => {}}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -541,6 +589,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: P.parchment,
+  },
+
+  refreshBadge: {
+    position: 'absolute',
+    top: TOPBAR_HEIGHT + 14,
+    alignSelf: 'center',
+    zIndex: 50,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#FFF8EC',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#8B654055',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 5,
   },
 
   topBar: {
@@ -602,8 +669,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: P.inkFaint,
     textAlign: 'center',
-    letterSpacing: 0.5,
-    marginTop: 8,
+    letterSpacing: 0.8,
   },
 
   card: {
@@ -631,6 +697,40 @@ const styles = StyleSheet.create({
   cardInner: {
     width: SCREEN_WIDTH - 72,
     alignItems: 'stretch',
+  },
+
+  verseCardBox: {
+    width: SCREEN_WIDTH - 58,
+    minHeight: CARD_HEIGHT * 0.72,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+ 
+  verseIconCircle: {
+    alignSelf: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: '#7A201055',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+    backgroundColor: '#F5EDD8',
+  },
+
+  verseTodaySub: {
+    textAlign: 'center',
+    color: P.inkFaint,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: -4,
+    marginBottom: 8,
   },
 
   categoryTag: {
@@ -689,6 +789,34 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
+  verseMainButton: {
+    marginTop: 18,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: P.rubriq,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+
+  verseMainButtonText: {
+    color: P.parchmentLt,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
+  themeLabel: {
+    fontSize: 9,
+    letterSpacing: 3,
+    color: P.inkFaint,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+
   passageTitle: {
     fontSize: 21,
     fontWeight: '300',
@@ -709,13 +837,45 @@ const styles = StyleSheet.create({
   marginNote: {
     borderLeftWidth: 2,
     paddingLeft: 14,
-    marginBottom: 4,
+    marginBottom: 12,
   },
 
   marginText: {
     fontSize: 15,
     lineHeight: 26,
     fontStyle: 'italic',
+    color: P.inkLight,
+  },
+
+  quoteBlock: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 3,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+
+  quoteMarks: {
+    fontSize: 32,
+    lineHeight: 28,
+    fontWeight: '300',
+    marginBottom: 2,
+  },
+
+  quoteText: {
+    fontSize: 14,
+    lineHeight: 23,
+    fontStyle: 'italic',
+    color: P.ink,
+    marginBottom: 8,
+  },
+
+  quoteRef: {
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textAlign: 'right',
+    textTransform: 'uppercase',
   },
 
   lireLink: {

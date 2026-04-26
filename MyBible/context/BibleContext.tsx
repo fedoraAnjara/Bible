@@ -6,18 +6,21 @@ import type { Language } from '../services/bibleService';
 type BibleContextType = {
   lang: Language;
   setLang: (l: Language) => Promise<void>;
+  fontSize: number;
+  setFontSize: (size: number) => void;
 };
 
 const BibleContext = createContext<BibleContextType>({
   lang: 'fr',
   setLang: async () => {},
+  fontSize: 17,
+  setFontSize: () => {},
 });
 
-// Provider : enveloppe toute l'app
 export function BibleProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>('fr');
+  const [fontSize, setFontSize] = useState(17);
 
-  // Au démarrage, on charge la langue sauvegardée
   useEffect(() => {
     loadLanguage().then(setLangState);
   }, []);
@@ -28,13 +31,12 @@ export function BibleProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <BibleContext.Provider value={{ lang, setLang }}>
+    <BibleContext.Provider value={{ lang, setLang, fontSize, setFontSize }}>
       {children}
     </BibleContext.Provider>
   );
 }
 
-// Hook personnalisé pour utiliser le contexte
 export function useBible() {
   return useContext(BibleContext);
 }
