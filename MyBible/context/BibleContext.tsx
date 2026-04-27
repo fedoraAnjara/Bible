@@ -1,7 +1,7 @@
-// context/BibleContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loadLanguage, saveLanguage } from '../services/storageService';
 import type { Language } from '../services/bibleService';
+
 
 type BibleContextType = {
   lang: Language;

@@ -1,13 +1,27 @@
-// app/_layout.tsx
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { BibleProvider, useBible } from '../context/BibleContext';
 
+const T = {
+  fr: {
+    appTitle: 'La Parole de Dieu',
+    modal: 'Modal',
+  },
+  en: {
+    appTitle: 'The Word of God',
+    modal: 'Modal',
+  },
+  mg: {
+    appTitle: 'Ny Tenin’Andriamanitra',
+    modal: 'Varavarankely',
+  },
+};
+
 function RootStack() {
   const { lang } = useBible();
-  const title = lang === 'fr' ? 'La Parole de Dieu' : 'The Word of God';
+  const t = T[lang];
 
   return (
     <Stack
@@ -22,11 +36,24 @@ function RootStack() {
         name="(tabs)"
         options={{
           headerShown: true,
-          headerTitle: title,
+          headerTitle: t.appTitle,
         }}
       />
-      <Stack.Screen name="plans/[id]" options={{ headerShown: true }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+
+      <Stack.Screen
+        name="plans/[id]"
+        options={{
+          headerShown: true,
+        }}
+      />
+
+      <Stack.Screen
+        name="modal"
+        options={{
+          presentation: 'modal',
+          title: t.modal,
+        }}
+      />
     </Stack>
   );
 }

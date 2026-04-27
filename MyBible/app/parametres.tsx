@@ -30,6 +30,19 @@ const T = {
     petit:       'A',
     grand:       'A',
   },
+    mg: {
+    titre:       'Fikirana',
+    retour:      '← Hiverina',
+    langue:      'Dikanteny',
+    taille:      'Hangezan-tsoratra',
+    petit:       'A',
+    grand:       'A',
+  },
+};
+const previewText = {
+  fr: 'Car Dieu a tant aimé le monde…',
+  en: 'For God so loved the world…',
+  mg: 'Fa toy izao no nitiavan’Andriamanitra izao tontolo izao…',
 };
 
 export default function ParametresScreen() {
@@ -69,6 +82,12 @@ export default function ParametresScreen() {
           >
             <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>🇬🇧 English</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.langBtn, lang === 'mg' && styles.langBtnActive]}
+            onPress={() => setLang('mg')}
+          >
+            <Text style={[styles.langBtnText, lang === 'mg' && styles.langBtnTextActive]}>🇲🇬 Malagasy</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -95,9 +114,7 @@ export default function ParametresScreen() {
           <Text style={[styles.sizeLabel, { fontSize: 20 }]}>{t.grand}</Text>
         </View>
         <Text style={[styles.preview, { fontSize }]}>
-          {lang === 'fr'
-            ? 'Car Dieu a tant aimé le monde…'
-            : 'For God so loved the world…'}
+          {previewText[lang]}
         </Text>
       </View>
     </View>

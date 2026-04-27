@@ -1,16 +1,14 @@
-// services/readingPlans.ts
-
 export type PlanDay = {
   day: number;
   book: number;
   chapter: number;
-  label?: string; // ex: "Genèse 1"
+  label?: string;
 };
 
 export type ReadingPlan = {
   id: string;
-  title: { fr: string; en: string };
-  description: { fr: string; en: string };
+  title: { fr: string; en: string; mg: string };
+  description: { fr: string; en: string; mg: string };
   totalDays: number;
   days: PlanDay[];
 };
@@ -155,50 +153,75 @@ function buildEvangiles40(): PlanDay[] {
 export const READING_PLANS: ReadingPlan[] = [
   {
     id: 'bible-1-an',
-    title: { fr: 'Bible en 1 an', en: 'Bible in 1 year' },
+    title: { 
+      fr: 'Bible en 1 an', 
+      en: 'Bible in 1 year',
+      mg: 'Baiboly ao anatin’ny 1 taona'
+    },
     description: {
       fr: 'Lisez toute la Bible en 365 jours, de la Genèse à l\'Apocalypse.',
       en: 'Read the entire Bible in 365 days, from Genesis to Revelation.',
+      mg: 'Vakio ny Baiboly manontolo ao anatin’ny 365 andro, manomboka amin’ny Genesisy ka hatramin’ny Apokalypsy.'
     },
     totalDays: 365,
     days: buildBible1An(),
   },
   {
     id: 'nt-90',
-    title: { fr: 'Nouveau Testament en 90 jours', en: 'New Testament in 90 days' },
+    title: { 
+      fr: 'Nouveau Testament en 90 jours', 
+      en: 'New Testament in 90 days',
+      mg: 'Testamenta Vaovao ao anatin’ny 90 andro'
+    },
     description: {
       fr: 'Parcourez les 27 livres du Nouveau Testament en 3 mois.',
       en: 'Journey through all 27 books of the New Testament in 3 months.',
+      mg: 'Vakio ireo boky 27 ao amin’ny Testamenta Vaovao ao anatin’ny 3 volana.'
     },
     totalDays: 90,
     days: buildNT90(),
   },
   {
     id: 'psaumes-30',
-    title: { fr: 'Psaumes en 30 jours', en: 'Psalms in 30 days' },
+    title: { 
+      fr: 'Psaumes en 30 jours', 
+      en: 'Psalms in 30 days',
+      mg: 'Salamo ao anatin’ny 30 andro'
+    },
     description: {
       fr: '5 psaumes par jour pour un mois de louange et de méditation.',
       en: '5 psalms a day for a month of praise and meditation.',
+      mg: 'Salamo 5 isan’andro mandritra ny iray volana ho an’ny fiderana sy fandinihana.'
     },
     totalDays: 30,
     days: buildPsaumes30(),
   },
   {
     id: 'proverbes-31',
-    title: { fr: 'Proverbes en 31 jours', en: 'Proverbs in 31 days' },
+    title: { 
+      fr: 'Proverbes en 31 jours', 
+      en: 'Proverbs in 31 days',
+      mg: 'Ohabolana ao anatin’ny 31 andro'
+    },
     description: {
       fr: 'Un chapitre de Proverbes par jour pour un mois de sagesse.',
       en: 'One chapter of Proverbs a day for a month of wisdom.',
+      mg: 'Toko iray isan’andro avy amin’ny Ohabolana mandritra ny iray volana ho an’ny fahendrena.'
     },
     totalDays: 31,
     days: buildProverbes31(),
   },
   {
     id: 'evangiles-40',
-    title: { fr: 'Évangiles en 40 jours', en: 'Gospels in 40 days' },
+    title: { 
+      fr: 'Évangiles en 40 jours', 
+      en: 'Gospels in 40 days',
+      mg: 'Filazantsara ao anatin’ny 40 andro'
+    },
     description: {
       fr: 'Matthieu, Marc, Luc et Jean en 40 jours de méditation.',
       en: 'Matthew, Mark, Luke and John in 40 days of meditation.',
+      mg: 'Vakio i Matio, Marka, Lioka ary Jaona ao anatin’ny 40 andro ho an’ny fandinihana.'
     },
     totalDays: 40,
     days: buildEvangiles40(),

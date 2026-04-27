@@ -1,4 +1,3 @@
-// app/(tabs)/plans.tsx
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, StatusBar,
@@ -54,6 +53,19 @@ const T = {
     progress:    'progress',
     confirmReset:'Restart this plan?',
   },
+    mg: {
+    title:       'Lahatra vakiteny',
+    active:      'Andalana',
+    available:   'lahatra azo atao',
+    dayOf:       'Andro',
+    on:          'Ny',
+    start:       'Fiantombohany',
+    resume:      'Andro manaraka',
+    reset:       'Averina',
+    completed:   'Vita',
+    progress:    'Andalana',
+    confirmReset:'Tianao averina ve?',
+  },
 };
 
 function ProgressBar({ value, color }: { value: number; color: string }) {
@@ -69,7 +81,7 @@ function PlanCard({
 }: {
   plan: ReadingPlan;
   progress: PlanProgress | null;
-  lang: 'fr' | 'en';
+  lang: 'fr' | 'en' | 'mg';
   onStart: () => void;
   onResume: () => void;
   onReset: () => void;

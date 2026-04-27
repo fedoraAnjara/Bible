@@ -1,6 +1,6 @@
-// services/bibleService.ts
 import kjvData from '../assets/bibles/kjv.json';
 import segondData from '../assets/bibles/segond_1910.json';
+import mg1865Data from '../assets/bibles/mg1865.json';
 
 export type Verse = {
   book_name: string;
@@ -10,9 +10,8 @@ export type Verse = {
   text: string;
 };
 
-export type Language = 'fr' | 'en';
+export type Language = 'fr' | 'en' | 'mg';
 
-// On charge les versets une seule fois en mémoire
 const ALL_VERSES: Record<Language, Verse[]> = {
   fr: (segondData as { verses: Verse[] }).verses.map(v => ({
     ...v,
@@ -21,6 +20,10 @@ const ALL_VERSES: Record<Language, Verse[]> = {
   en: (kjvData as { verses: Verse[] }).verses.map(v => ({
     ...v,
     text: v.text.replace(/¶\s*/g, '').trim()
+  })),
+  mg: (mg1865Data as { verses: Verse[] }).verses.map(v => ({
+    ...v,
+    text: v.text.replace(/\[.*?\]/g, '').trim()  // nettoie les [titres de section]
   })),
 };
 

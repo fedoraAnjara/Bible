@@ -1,4 +1,3 @@
-// app/plans/[id].tsx
 import {
   View, Text, StyleSheet, TouchableOpacity,
   FlatList, StatusBar,
@@ -35,6 +34,13 @@ const T = {
     done:      'Done',
     markDone:  'Mark as read',
     todayHint: 'Today',
+  },
+   mg: {
+    day:       'Andro',
+    read:      'Vakio',
+    done:      'Vita',
+    markDone:  'Voavaky',
+    todayHint: 'Anio',
   },
 };
 

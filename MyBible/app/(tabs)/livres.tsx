@@ -7,6 +7,7 @@ import { TextInput } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useBible } from '../../context/BibleContext';
 import { getBooks, searchVerses, Verse } from '../../services/bibleService';
+import type { Language } from '../../services/bibleService';
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import Animated, {
   useSharedValue, useAnimatedStyle,
@@ -16,6 +17,11 @@ import Animated, {
 const { width } = Dimensions.get('window');
 const CARD_WIDTH  = (width - 48) / 2;
 const CARD_HEIGHT = CARD_WIDTH * 1.4;
+
+// Helper de traduction trilingue
+function l(lang: Language, fr: string, en: string, mg: string): string {
+  return lang === 'fr' ? fr : lang === 'mg' ? mg : en;
+}
 
 const BOOK_IMAGES: Record<number, any> = {
   1:  require('../../assets/images/books/1.jpg'),
@@ -86,76 +92,76 @@ const BOOK_IMAGES: Record<number, any> = {
   66: require('../../assets/images/books/66.jpg'),
 };
 
-const BOOK_SUMMARIES: Record<number, { fr: string; en: string }> = {
-  1:  { fr: 'La création du monde et l\'histoire des patriarches.', en: 'Creation, the fall, and the patriarchs.' },
-  2:  { fr: 'La libération d\'Israël hors d\'Égypte et la loi de Dieu.', en: 'Israel\'s deliverance from Egypt and the covenant at Sinai.' },
-  3:  { fr: 'Les lois de sainteté, de sacrifice et de pureté.', en: 'Laws of holiness, sacrifice, and purity.' },
-  4:  { fr: 'Le voyage d\'Israël dans le désert et ses rébellions.', en: 'Israel\'s wanderings in the wilderness.' },
-  5:  { fr: 'Le discours d\'adieu de Moïse avant l\'entrée en Canaan.', en: 'Moses\' farewell sermons before entering the Promised Land.' },
-  6:  { fr: 'La conquête de Canaan sous la conduite de Josué.', en: 'The conquest of Canaan under Joshua\'s leadership.' },
-  7:  { fr: 'Les juges d\'Israël dans un cycle de péché et de délivrance.', en: 'Israel\'s cycle of sin, oppression, and deliverance through the judges.' },
-  8:  { fr: 'La fidélité de Ruth et sa place dans la lignée de David.', en: 'Ruth\'s faithfulness and her place in the lineage of David.' },
-  9:  { fr: 'Samuel, Saül et les débuts de la monarchie en Israël.', en: 'Samuel, Saul, and the rise of Israel\'s monarchy.' },
-  10: { fr: 'Le règne de David : gloire, péché et grâce de Dieu.', en: 'David\'s reign: triumph, sin, and God\'s enduring grace.' },
-  11: { fr: 'De la sagesse de Salomon à la division du royaume.', en: 'Solomon\'s wisdom and the division of the kingdom.' },
-  12: { fr: 'Les rois d\'Israël et de Juda jusqu\'à l\'exil babylonien.', en: 'The kings of Israel and Judah up to the Babylonian exile.' },
-  13: { fr: 'L\'histoire d\'Israël depuis Adam jusqu\'à David.', en: 'Israel\'s history from Adam to David through genealogies and events.' },
-  14: { fr: 'De la gloire de Salomon à la chute de Jérusalem.', en: 'From Solomon\'s glory to the fall of Jerusalem.' },
-  15: { fr: 'Le retour des exilés et la reconstruction du Temple.', en: 'The return from exile and the rebuilding of the Temple.' },
-  16: { fr: 'Néhémie reconstruit les murailles de Jérusalem.', en: 'Nehemiah rebuilds the walls of Jerusalem and restores the community.' },
-  17: { fr: 'Esther sauve courageusement le peuple juif.', en: 'Esther courageously saves the Jewish people from destruction.' },
-  18: { fr: 'Job souffre injustement et rencontre Dieu dans la tempête.', en: 'Job suffers unjustly and encounters God in the whirlwind.' },
-  19: { fr: 'Chants de louange, de lamentation et de confiance en Dieu.', en: 'Songs of praise, lament, and trust in God.' },
-  20: { fr: 'La sagesse pratique pour une vie juste et honorable.', en: 'Practical wisdom for a righteous and honorable life.' },
-  21: { fr: 'La vanité de la vie humaine sans Dieu.', en: 'The vanity of human life apart from God.' },
-  22: { fr: 'Un poème d\'amour célébrant la beauté du mariage.', en: 'A poem celebrating the beauty and depth of love and marriage.' },
-  23: { fr: 'Jugement sur Israël et promesse du Serviteur souffrant.', en: 'Judgment on Israel and the promise of the Suffering Servant.' },
-  24: { fr: 'Jérémie pleure sur Juda et annonce une nouvelle alliance.', en: 'Jeremiah mourns over Judah and announces a new covenant.' },
-  25: { fr: 'Les lamentations de Jérémie sur la chute de Jérusalem.', en: 'Jeremiah\'s laments over the fall of Jerusalem.' },
-  26: { fr: 'Les visions d\'Ézéchiel sur le jugement et la restauration.', en: 'Ezekiel\'s visions of judgment, exile, and Israel\'s restoration.' },
-  27: { fr: 'Daniel reste fidèle à Dieu au cœur de l\'empire babylonien.', en: 'Daniel remains faithful to God in the heart of Babylon.' },
-  28: { fr: 'L\'amour d\'Osée pour sa femme infidèle, image de Dieu et Israël.', en: 'Hosea\'s love for his unfaithful wife mirrors God\'s love for Israel.' },
-  29: { fr: 'Joël annonce le Jour du Seigneur et l\'effusion de l\'Esprit.', en: 'Joel announces the Day of the Lord and the outpouring of the Spirit.' },
-  30: { fr: 'Amos dénonce l\'injustice sociale et appelle à la repentance.', en: 'Amos denounces social injustice and calls Israel to repentance.' },
-  31: { fr: 'Abdias prophétise le jugement d\'Édom et la restauration d\'Israël.', en: 'Obadiah prophesies judgment on Edom and restoration for Israel.' },
-  32: { fr: 'Jonas fuit Dieu, puis proclame sa grâce aux nations.', en: 'Jonah flees from God, then proclaims His grace to the nations.' },
-  33: { fr: 'Michée annonce le jugement et la venue du Messie à Bethléem.', en: 'Micah announces judgment and the Messiah\'s birth in Bethlehem.' },
-  34: { fr: 'Nahoum proclame la chute de Ninive et la justice de Dieu.', en: 'Nahum proclaims the fall of Nineveh and God\'s justice.' },
-  35: { fr: 'Habacuc questionne Dieu sur le mal et apprend à lui faire confiance.', en: 'Habakkuk questions God about evil and learns to trust His sovereignty.' },
-  36: { fr: 'Sophonie annonce le Jour du Seigneur et la restauration du reste.', en: 'Zephaniah announces the Day of the Lord and the restoration of a remnant.' },
-  37: { fr: 'Aggée exhorte le peuple à reconstruire le Temple de Dieu.', en: 'Haggai urges the people to rebuild God\'s Temple.' },
-  38: { fr: 'Zacharie voit des visions messianiques et la gloire future.', en: 'Zechariah sees messianic visions of the coming King and future glory.' },
-  39: { fr: 'Malachie appelle Israël à revenir à Dieu avant le grand Jour.', en: 'Malachi calls Israel back to God before the coming great Day.' },
-  40: { fr: 'Jésus, le roi Messie et l\'accomplissement de la loi.', en: 'Jesus, the Messiah King who fulfills the Law and the Prophets.' },
-  41: { fr: 'Jésus, le serviteur puissant qui agit avec autorité.', en: 'Jesus, the powerful Servant who acts with authority and urgency.' },
-  42: { fr: 'Jésus, le Sauveur compatissant pour tous les marginalisés.', en: 'Jesus, the compassionate Savior for the outcasts and the lost.' },
-  43: { fr: 'Jésus, le Verbe de Dieu incarné qui donne la vie éternelle.', en: 'Jesus, the Word of God incarnate who gives eternal life.' },
-  44: { fr: 'La naissance de l\'Église par l\'Esprit et la mission aux nations.', en: 'The birth of the Church by the Spirit and the mission to the nations.' },
-  45: { fr: 'La justification par la foi seule, expliquée à Rome.', en: 'Justification by faith alone, explained to the church in Rome.' },
-  46: { fr: 'Paul corrige les divisions et les désordres de l\'église de Corinthe.', en: 'Paul corrects divisions and disorders in the church of Corinth.' },
-  47: { fr: 'Paul défend son ministère et appelle à la réconciliation.', en: 'Paul defends his ministry and calls for reconciliation.' },
-  48: { fr: 'La liberté en Christ contre le légalisme des judaisants.', en: 'Freedom in Christ against the legalism of the Judaizers.' },
-  49: { fr: 'L\'Église, corps du Christ, revêtue de l\'armure de Dieu.', en: 'The Church as the body of Christ, clothed in God\'s armor.' },
-  50: { fr: 'La joie en Christ malgré l\'emprisonnement de Paul.', en: 'Joy in Christ despite Paul\'s imprisonment.' },
-  51: { fr: 'La suprématie absolue du Christ sur toute création.', en: 'The absolute supremacy of Christ over all creation.' },
-  52: { fr: 'Encouragements pour tenir ferme jusqu\'au retour du Christ.', en: 'Encouragement to stand firm until the return of Christ.' },
-  53: { fr: 'Clarifications sur le Jour du Seigneur et l\'homme du péché.', en: 'Clarifications about the Day of the Lord and the man of lawlessness.' },
-  54: { fr: 'Conseils à Timothée pour diriger et enseigner l\'Église.', en: 'Guidance for Timothy on leadership and sound doctrine in the Church.' },
-  55: { fr: 'Le testament spirituel de Paul à son fils dans la foi.', en: 'Paul\'s spiritual testament to his son in the faith.' },
-  56: { fr: 'Instructions à Tite pour établir les anciens dans les Églises.', en: 'Instructions to Titus for appointing elders and teaching sound doctrine.' },
-  57: { fr: 'Paul intercède pour l\'esclave fugitif Onésime auprès de Philémon.', en: 'Paul intercedes for the runaway slave Onesimus with Philemon.' },
-  58: { fr: 'La supériorité de Christ sur la loi mosaïque et les sacrifices.', en: 'The superiority of Christ over the Mosaic law and sacrifices.' },
-  59: { fr: 'Une foi vivante se prouve par des œuvres et une sagesse pratique.', en: 'A living faith is proved by works and practical wisdom.' },
-  60: { fr: 'Pierre encourage les croyants persécutés à tenir ferme.', en: 'Peter encourages persecuted believers to stand firm in their faith.' },
-  61: { fr: 'Mise en garde contre les faux docteurs et le retour du Christ.', en: 'Warning against false teachers and the certainty of Christ\'s return.' },
-  62: { fr: 'Dieu est amour : marcher dans la lumière et aimer les frères.', en: 'God is love: walking in the light and loving one another.' },
-  63: { fr: 'Courte lettre appelant à rester dans la vérité de l\'Évangile.', en: 'A brief letter calling to remain in the truth of the Gospel.' },
-  64: { fr: 'Encouragements à accueillir les frères itinérants dans la vérité.', en: 'Encouragement to welcome traveling ministers who serve the truth.' },
-  65: { fr: 'Jude met en garde contre les faux docteurs infiltrés dans l\'Église.', en: 'Jude warns against false teachers who have crept into the Church.' },
-  66: { fr: 'La victoire finale de Christ sur le mal et la gloire éternelle.', en: 'The final victory of Christ over evil and the eternal glory to come.' },
+const BOOK_SUMMARIES: Record<number, { fr: string; en: string; mg: string }> = {
+  1:  { fr: 'La création du monde et l\'histoire des patriarches.', en: 'Creation, the fall, and the patriarchs.', mg: 'Ny namoronan\'Andriamanitra izao tontolo izao sy ny tantaran\'ny patriarka.' },
+  2:  { fr: 'La libération d\'Israël hors d\'Égypte et la loi de Dieu.', en: 'Israel\'s deliverance from Egypt and the covenant at Sinai.', mg: 'Ny namoahana ny Isiraely tany Egipta sy ny fanekempihavanana tao Sinay.' },
+  3:  { fr: 'Les lois de sainteté, de sacrifice et de pureté.', en: 'Laws of holiness, sacrifice, and purity.', mg: 'Ny lalàna momba ny fahamasinana, ny fanatitra ary ny fahadiovana.' },
+  4:  { fr: 'Le voyage d\'Israël dans le désert et ses rébellions.', en: 'Israel\'s wanderings in the wilderness.', mg: 'Ny faniavian\'ny Isiraely tany an\'efitra sy ny fikomiana nataony.' },
+  5:  { fr: 'Le discours d\'adieu de Moïse avant l\'entrée en Canaan.', en: 'Moses\' farewell sermons before entering the Promised Land.', mg: 'Ny toriteny farany nataon\'i Mosesy talohan\'ny nidiran\'izy ireo tany Kanana.' },
+  6:  { fr: 'La conquête de Canaan sous la conduite de Josué.', en: 'The conquest of Canaan under Joshua\'s leadership.', mg: 'Ny fanafarana an\'i Kanana teo ambany fitarihan\'i Josoa.' },
+  7:  { fr: 'Les juges d\'Israël dans un cycle de péché et de délivrance.', en: 'Israel\'s cycle of sin, oppression, and deliverance through the judges.', mg: 'Ny mpitsara ny Isiraely tao anatin\'ny fitodirian\'ny ota sy ny famonjena.' },
+  8:  { fr: 'La fidélité de Ruth et sa place dans la lignée de David.', en: 'Ruth\'s faithfulness and her place in the lineage of David.', mg: 'Ny fahatokian\'i Rota sy ny toerana nananany tao amin\'ny taranaky Davida.' },
+  9:  { fr: 'Samuel, Saül et les débuts de la monarchie en Israël.', en: 'Samuel, Saul, and the rise of Israel\'s monarchy.', mg: 'Samoela, Saoly ary ny niandohan\'ny fanjakan\'ny Isiraely.' },
+  10: { fr: 'Le règne de David : gloire, péché et grâce de Dieu.', en: 'David\'s reign: triumph, sin, and God\'s enduring grace.', mg: 'Ny fanjakan\'i Davida: voninahitra, ota ary fahasoavan\'Andriamanitra.' },
+  11: { fr: 'De la sagesse de Salomon à la division du royaume.', en: 'Solomon\'s wisdom and the division of the kingdom.', mg: 'Ny fahendren\'i Solomona sy ny fizarazaran\'ny fanjakana.' },
+  12: { fr: 'Les rois d\'Israël et de Juda jusqu\'à l\'exil babylonien.', en: 'The kings of Israel and Judah up to the Babylonian exile.', mg: 'Ny mpanjakan\'ny Isiraely sy ny Joda hatramin\'ny fahababoana babyloniana.' },
+  13: { fr: 'L\'histoire d\'Israël depuis Adam jusqu\'à David.', en: 'Israel\'s history from Adam to David through genealogies and events.', mg: 'Ny tantaran\'ny Isiraely hatramin\'i Adama ka hatramin\'i Davida.' },
+  14: { fr: 'De la gloire de Salomon à la chute de Jérusalem.', en: 'From Solomon\'s glory to the fall of Jerusalem.', mg: 'Ny voninahitry ny fanjakan\'i Solomona ka hatramin\'ny fianjeran\'i Jerosalema.' },
+  15: { fr: 'Le retour des exilés et la reconstruction du Temple.', en: 'The return from exile and the rebuilding of the Temple.', mg: 'Ny fiverenana avy amin\'ny fahababoana sy ny fanorenana ny Tempoly indray.' },
+  16: { fr: 'Néhémie reconstruit les murailles de Jérusalem.', en: 'Nehemiah rebuilds the walls of Jerusalem and restores the community.', mg: 'Namerina ny mandan\'i Jerosalema i Nehemia sy ny famerenana ny fiaraha-monina.' },
+  17: { fr: 'Esther sauve courageusement le peuple juif.', en: 'Esther courageously saves the Jewish people from destruction.', mg: 'Nanafaka ny vahoakan\'ny Jiosy tamin\'ny fahasahiany i Estera.' },
+  18: { fr: 'Job souffre injustement et rencontre Dieu dans la tempête.', en: 'Job suffers unjustly and encounters God in the whirlwind.', mg: 'Nijaly tsy rariny i Joba ary nihaona tamin\'Andriamanitra tao anatin\'ny tafio-drivotra.' },
+  19: { fr: 'Chants de louange, de lamentation et de confiance en Dieu.', en: 'Songs of praise, lament, and trust in God.', mg: 'Hira fiderana, fitarainana ary fitokiana amin\'Andriamanitra.' },
+  20: { fr: 'La sagesse pratique pour une vie juste et honorable.', en: 'Practical wisdom for a righteous and honorable life.', mg: 'Fahendrena azo ampiharina amin\'ny fiainana marina sy mendrika.' },
+  21: { fr: 'La vanité de la vie humaine sans Dieu.', en: 'The vanity of human life apart from God.', mg: 'Ny foana amin\'ny fiainan\'ny olombelona raha tsy misy Andriamanitra.' },
+  22: { fr: 'Un poème d\'amour célébrant la beauté du mariage.', en: 'A poem celebrating the beauty and depth of love and marriage.', mg: 'Fihirana fankasitrahana ny hasoavan\'ny fitiavana sy ny fanambadiana.' },
+  23: { fr: 'Jugement sur Israël et promesse du Serviteur souffrant.', en: 'Judgment on Israel and the promise of the Suffering Servant.', mg: 'Fitsarana ny Isiraely sy ny faminaniana momba ny Mpanompo mijaly.' },
+  24: { fr: 'Jérémie pleure sur Juda et annonce une nouvelle alliance.', en: 'Jeremiah mourns over Judah and announces a new covenant.', mg: 'Nifona tamin\'i Joda i Jeremia ary nanambara fanekempihavanana vaovao.' },
+  25: { fr: 'Les lamentations de Jérémie sur la chute de Jérusalem.', en: 'Jeremiah\'s laments over the fall of Jerusalem.', mg: 'Ny fitarainan\'i Jeremia momba ny fianjeran\'i Jerosalema.' },
+  26: { fr: 'Les visions d\'Ézéchiel sur le jugement et la restauration.', en: 'Ezekiel\'s visions of judgment, exile, and Israel\'s restoration.', mg: 'Ny fahitana nomen\'i Ezekiela momba ny fitsarana sy ny famerenana ny Isiraely.' },
+  27: { fr: 'Daniel reste fidèle à Dieu au cœur de l\'empire babylonien.', en: 'Daniel remains faithful to God in the heart of Babylon.', mg: 'Nijanona mahatoky tamin\'Andriamanitra i Daniela tao amin\'ny fitondrana babyloniana.' },
+  28: { fr: 'L\'amour d\'Osée pour sa femme infidèle, image de Dieu et Israël.', en: 'Hosea\'s love for his unfaithful wife mirrors God\'s love for Israel.', mg: 'Ny fitiavan\'i Hosea ny vadiny tsy mahatoky, sary an\'ohatra ny fitiavan\'Andriamanitra ny Isiraely.' },
+  29: { fr: 'Joël annonce le Jour du Seigneur et l\'effusion de l\'Esprit.', en: 'Joel announces the Day of the Lord and the outpouring of the Spirit.', mg: 'Nanambara ny Andro Soapy ny Tompo sy ny fidedahana ny Fanahy i Joely.' },
+  30: { fr: 'Amos dénonce l\'injustice sociale et appelle à la repentance.', en: 'Amos denounces social injustice and calls Israel to repentance.', mg: 'Nanenjika ny tsy fahamarinana ara-tsosialy i Amosa ary niantso ny fibebahana.' },
+  31: { fr: 'Abdias prophétise le jugement d\'Édom et la restauration d\'Israël.', en: 'Obadiah prophesies judgment on Edom and restoration for Israel.', mg: 'Naminany momba ny fitsarana an\'i Edoma sy ny famerenana ny Isiraely i Abdiasy.' },
+  32: { fr: 'Jonas fuit Dieu, puis proclame sa grâce aux nations.', en: 'Jonah flees from God, then proclaims His grace to the nations.', mg: 'Nandositra an\'Andriamanitra i Jona, ary nitory ny fahasoavany tamin\'ny firenena.' },
+  33: { fr: 'Michée annonce le jugement et la venue du Messie à Bethléem.', en: 'Micah announces judgment and the Messiah\'s birth in Bethlehem.', mg: 'Nanambara ny fitsarana sy ny nahaterahan\'ny Mesia tany Betlehema i Mika.' },
+  34: { fr: 'Nahoum proclame la chute de Ninive et la justice de Dieu.', en: 'Nahum proclaims the fall of Nineveh and God\'s justice.', mg: 'Nanambara ny fianjeran\'i Ninive sy ny fahamarinan\'Andriamanitra i Nahoma.' },
+  35: { fr: 'Habacuc questionne Dieu sur le mal et apprend à lui faire confiance.', en: 'Habakkuk questions God about evil and learns to trust His sovereignty.', mg: 'Nanontany an\'Andriamanitra momba ny ratsy i Habakoka ary nianatra nitokia Azy.' },
+  36: { fr: 'Sophonie annonce le Jour du Seigneur et la restauration du reste.', en: 'Zephaniah announces the Day of the Lord and the restoration of a remnant.', mg: 'Nanambara ny Andro Soapy ny Tompo sy ny famerenana ny sisa i Zefania.' },
+  37: { fr: 'Aggée exhorte le peuple à reconstruire le Temple de Dieu.', en: 'Haggai urges the people to rebuild God\'s Temple.', mg: 'Nanentana ny vahoaka hanorina ny Tempolin\'Andriamanitra indray i Hagay.' },
+  38: { fr: 'Zacharie voit des visions messianiques et la gloire future.', en: 'Zechariah sees messianic visions of the coming King and future glory.', mg: 'Nahita fahitana momba ny Mesia sy ny voninahitra ho avy i Zakaria.' },
+  39: { fr: 'Malachie appelle Israël à revenir à Dieu avant le grand Jour.', en: 'Malachi calls Israel back to God before the coming great Day.', mg: 'Niantso ny Isiraely hiverina amin\'Andriamanitra talohan\'ny Andro lehibe i Malakia.' },
+  40: { fr: 'Jésus, le roi Messie et l\'accomplissement de la loi.', en: 'Jesus, the Messiah King who fulfills the Law and the Prophets.', mg: 'Jesoa, ny Mpanjaka Mesia izay nanatanteraka ny lalàna sy ny mpaminany.' },
+  41: { fr: 'Jésus, le serviteur puissant qui agit avec autorité.', en: 'Jesus, the powerful Servant who acts with authority and urgency.', mg: 'Jesoa, ny Mpanompo mahery izay niasa tamin\'ny fahefana sy ny faingam-pandeha.' },
+  42: { fr: 'Jésus, le Sauveur compatissant pour tous les marginalisés.', en: 'Jesus, the compassionate Savior for the outcasts and the lost.', mg: 'Jesoa, ny Mpamonjy be fiantrana ho an\'ny ory sy ny very.' },
+  43: { fr: 'Jésus, le Verbe de Dieu incarné qui donne la vie éternelle.', en: 'Jesus, the Word of God incarnate who gives eternal life.', mg: 'Jesoa, ny Tenin\'Andriamanitra tonga nofo izay manome fiainana mandrakizay.' },
+  44: { fr: 'La naissance de l\'Église par l\'Esprit et la mission aux nations.', en: 'The birth of the Church by the Spirit and the mission to the nations.', mg: 'Ny niandohan\'ny Fiangonana tamin\'ny Fanahy sy ny iraka any amin\'ny firenena.' },
+  45: { fr: 'La justification par la foi seule, expliquée à Rome.', en: 'Justification by faith alone, explained to the church in Rome.', mg: 'Ny fahamarinana amin\'ny finoana irery, voazava ho an\'ny Fiangonana tany Roma.' },
+  46: { fr: 'Paul corrige les divisions et les désordres de l\'église de Corinthe.', en: 'Paul corrects divisions and disorders in the church of Corinth.', mg: 'Namerina ny fizarazarana sy ny fisavorovoroana tao amin\'ny Fiangonana tany Korinto i Paoly.' },
+  47: { fr: 'Paul défend son ministère et appelle à la réconciliation.', en: 'Paul defends his ministry and calls for reconciliation.', mg: 'Niaro ny fanompoany i Paoly ary niantso ny fampihavanana.' },
+  48: { fr: 'La liberté en Christ contre le légalisme des judaisants.', en: 'Freedom in Christ against the legalism of the Judaizers.', mg: 'Ny fahafahan\'ny ao amin\'i Kristy manohitra ny legalisma.' },
+  49: { fr: 'L\'Église, corps du Christ, revêtue de l\'armure de Dieu.', en: 'The Church as the body of Christ, clothed in God\'s armor.', mg: 'Ny Fiangonana, tenan\'i Kristy, mitafy ny fiarovan\'Andriamanitra.' },
+  50: { fr: 'La joie en Christ malgré l\'emprisonnement de Paul.', en: 'Joy in Christ despite Paul\'s imprisonment.', mg: 'Ny fifaliana ao amin\'i Kristy na dia voafonja aza i Paoly.' },
+  51: { fr: 'La suprématie absolue du Christ sur toute création.', en: 'The absolute supremacy of Christ over all creation.', mg: 'Ny fahalehibeazan\'i Kristy ambony noho ny famoronana rehetra.' },
+  52: { fr: 'Encouragements pour tenir ferme jusqu\'au retour du Christ.', en: 'Encouragement to stand firm until the return of Christ.', mg: 'Famporisihana haharitra mafy mandra-pahatonga an\'i Kristy indray.' },
+  53: { fr: 'Clarifications sur le Jour du Seigneur et l\'homme du péché.', en: 'Clarifications about the Day of the Lord and the man of lawlessness.', mg: 'Fanazavana momba ny Andro Soapy ny Tompo sy ny lehilahin\'ny ota.' },
+  54: { fr: 'Conseils à Timothée pour diriger et enseigner l\'Église.', en: 'Guidance for Timothy on leadership and sound doctrine in the Church.', mg: 'Toromarika ho an\'i Timoty amin\'ny fitarihana sy ny fampianaran\'ny Fiangonana.' },
+  55: { fr: 'Le testament spirituel de Paul à son fils dans la foi.', en: 'Paul\'s spiritual testament to his son in the faith.', mg: 'Ny testamenta ara-panahin\'i Paoly ho an\'ny zanany amin\'ny finoana.' },
+  56: { fr: 'Instructions à Tite pour établir les anciens dans les Églises.', en: 'Instructions to Titus for appointing elders and teaching sound doctrine.', mg: 'Toromarika ho an\'i Tito amin\'ny fanamasinana ny loholona sy ny fampianaran\'ny fahamarinana.' },
+  57: { fr: 'Paul intercède pour l\'esclave fugitif Onésime auprès de Philémon.', en: 'Paul intercedes for the runaway slave Onesimus with Philemon.', mg: 'Nanelanelana ho an\'ny andevo nandositra Onesima i Paoly tamin\'i Filemona.' },
+  58: { fr: 'La supériorité de Christ sur la loi mosaïque et les sacrifices.', en: 'The superiority of Christ over the Mosaic law and sacrifices.', mg: 'Ny fahalehibeazan\'i Kristy ambony noho ny lalàna mosesy sy ny fanatitra.' },
+  59: { fr: 'Une foi vivante se prouve par des œuvres et une sagesse pratique.', en: 'A living faith is proved by works and practical wisdom.', mg: 'Ny finoana velona asehon\'ny asa sy ny fahendrena azo ampiharina.' },
+  60: { fr: 'Pierre encourage les croyants persécutés à tenir ferme.', en: 'Peter encourages persecuted believers to stand firm in their faith.', mg: 'Namporisika ny mino voaenjika haharitra amin\'ny finoany i Petera.' },
+  61: { fr: 'Mise en garde contre les faux docteurs et le retour du Christ.', en: 'Warning against false teachers and the certainty of Christ\'s return.', mg: 'Fampitandremana momba ny mpampianatra sandoka sy ny fiverenan\'i Kristy matoky.' },
+  62: { fr: 'Dieu est amour : marcher dans la lumière et aimer les frères.', en: 'God is love: walking in the light and loving one another.', mg: 'Andriamanitra dia fitiavana: mandeha amin\'ny mazava sy mitiava ny rahalahy.' },
+  63: { fr: 'Courte lettre appelant à rester dans la vérité de l\'Évangile.', en: 'A brief letter calling to remain in the truth of the Gospel.', mg: 'Taratasy fohy miantso ny hitoetra amin\'ny fahamarinana ny Filazantsara.' },
+  64: { fr: 'Encouragements à accueillir les frères itinérants dans la vérité.', en: 'Encouragement to welcome traveling ministers who serve the truth.', mg: 'Famporisihana handray ny mpitandrina mpivahiny izay manompo ny fahamarinana.' },
+  65: { fr: 'Jude met en garde contre les faux docteurs infiltrés dans l\'Église.', en: 'Jude warns against false teachers who have crept into the Church.', mg: 'Nampitandrina ny mpampianatra sandoka niditra tao amin\'ny Fiangonana i Joda.' },
+  66: { fr: 'La victoire finale de Christ sur le mal et la gloire éternelle.', en: 'The final victory of Christ over evil and the eternal glory to come.', mg: 'Ny fandresena farany an\'i Kristy amin\'ny ratsy sy ny voninahitra mandrakizay ho avy.' },
 };
 
-//Highlight du mot cherché dans un texte
+// Highlight du mot cherché dans un texte
 function HighlightedText({ text, query, style }: { text: string; query: string; style?: object }) {
   if (!query || query.length < 3) return <Text style={style}>{text}</Text>;
   const lower = text.toLowerCase();
@@ -170,7 +176,7 @@ function HighlightedText({ text, query, style }: { text: string; query: string; 
   );
 }
 
-//Carte de résultat verset
+// Carte de résultat verset
 function VerseResultCard({ verse, query, onPress }: {
   verse: Verse;
   query: string;
@@ -191,7 +197,7 @@ function VerseResultCard({ verse, query, onPress }: {
   );
 }
 
-//Section Header──────────
+// Section Header
 function SectionHeader({ label, isOT }: { label: string; isOT: boolean }) {
   return (
     <View style={styles.sectionHeader}>
@@ -202,10 +208,10 @@ function SectionHeader({ label, isOT }: { label: string; isOT: boolean }) {
   );
 }
 
-//Book Card───────────────
+// Book Card
 function BookCard({ item, lang, onPress, isFlipped, onFlip }: {
   item: { book: number; name: string; chapters: number };
-  lang: 'fr' | 'en';
+  lang: Language;
   onPress: () => void;
   isFlipped: boolean;
   onFlip: (bookNum: number) => void;
@@ -226,8 +232,8 @@ function BookCard({ item, lang, onPress, isFlipped, onFlip }: {
     backfaceVisibility: 'hidden',
   }));
 
-  const isOT    = item.book <= 39;
-  const summary = BOOK_SUMMARIES[item.book]?.[lang] ?? (lang === 'fr' ? 'Résumé du livre biblique.' : 'Summary of the biblical book.');
+  const isOT   = item.book <= 39;
+  const summary = BOOK_SUMMARIES[item.book]?.[lang] ?? BOOK_SUMMARIES[item.book]?.fr ?? 'Résumé du livre biblique.';
 
   return (
     <TouchableOpacity activeOpacity={1} onPress={() => onFlip(item.book)} style={styles.cardWrapper}>
@@ -243,28 +249,30 @@ function BookCard({ item, lang, onPress, isFlipped, onFlip }: {
         <Text style={styles.backTitle}>{item.name}</Text>
         <View style={[styles.divider, isOT ? styles.dividerOT : styles.dividerNT]} />
         <Text style={styles.backSummary}>{summary}</Text>
-        <Text style={styles.backChapters}>{item.chapters} {lang === 'fr' ? 'chapitres' : 'chapters'}</Text>
+        <Text style={styles.backChapters}>
+          {item.chapters} {l(lang, 'chapitres', 'chapters', 'toko')}
+        </Text>
         <TouchableOpacity style={[styles.readBtn, isOT ? styles.readBtnOT : styles.readBtnNT]} onPress={onPress}>
-          <Text style={styles.readBtnText}>{lang === 'fr' ? 'Lire →' : 'Read →'}</Text>
+          <Text style={styles.readBtnText}>{l(lang, 'Lire →', 'Read →', 'Vakio →')}</Text>
         </TouchableOpacity>
-        <Text style={styles.flipHint}>{lang === 'fr' ? '↺ retourner' : '↺ flip'}</Text>
+        <Text style={styles.flipHint}>{l(lang, '↺ retourner', '↺ flip', '↺ mamerina')}</Text>
       </Animated.View>
     </TouchableOpacity>
   );
 }
 
-//Écran principal─────────
+// Écran principal
 export default function LivresScreen() {
-  const [search, setSearch]           = useState('');
-  const [activeTab, setActiveTab]     = useState<'OT' | 'NT'>('OT');
-  const [flippedBook, setFlippedBook] = useState<number | null>(null);
+  const [search, setSearch]             = useState('');
+  const [activeTab, setActiveTab]       = useState<'OT' | 'NT'>('OT');
+  const [flippedBook, setFlippedBook]   = useState<number | null>(null);
   const [verseResults, setVerseResults] = useState<Verse[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const { lang }                      = useBible();
-  const router                        = useRouter();
-  const scrollRef                     = useRef<ScrollView>(null);
-  const ntOffsetY                     = useRef<number>(0);
-  const searchTimer                   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isSearching, setIsSearching]   = useState(false);
+  const { lang }                        = useBible();
+  const router                          = useRouter();
+  const scrollRef                       = useRef<ScrollView>(null);
+  const ntOffsetY                       = useRef<number>(0);
+  const searchTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const books        = useMemo(() => getBooks(lang), [lang]);
   const oldTestament = useMemo(() => books.filter(b => b.book <= 39), [books]);
@@ -348,20 +356,20 @@ export default function LivresScreen() {
     }
   };
 
-  const otLabel = lang === 'fr' ? 'Ancien Testament' : 'Old Testament';
-  const ntLabel = lang === 'fr' ? 'Nouveau Testament' : 'New Testament';
+  const otLabel = l(lang, 'Ancien Testament', 'Old Testament', 'Testamenta Taloha');
+  const ntLabel = l(lang, 'Nouveau Testament', 'New Testament', 'Testamenta Vaovao');
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: lang === 'fr' ? 'La Bible' : 'The Bible',
+          title: l(lang, 'La Bible', 'The Bible', 'Ny Baiboly'),
           headerStyle: { backgroundColor: 'wheat' },
           headerTintColor: '#5C3D0E',
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 8 }}>
               <Text style={[styles.backHeader, { minWidth: 60 }]}>
-                {lang === 'fr' ? '← Retour' : '← Back'}
+                {l(lang, '← Retour', '← Back', '← Hiverina')}
               </Text>
             </TouchableOpacity>
           ),
@@ -372,7 +380,12 @@ export default function LivresScreen() {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder={lang === 'fr' ? 'Rechercher un livre ou un verset...' : 'Search a book or verse...'}
+            placeholder={l(
+              lang,
+              'Rechercher un livre ou un verset...',
+              'Search a book or verse...',
+              'Hikaroka boky na andininy...'
+            )}
             placeholderTextColor="#A08060"
             value={search}
             onChangeText={setSearch}
@@ -386,14 +399,14 @@ export default function LivresScreen() {
             <TouchableOpacity style={styles.dotBtn} onPress={goToOT} activeOpacity={0.7}>
               <View style={[styles.dot, activeTab === 'OT' && styles.dotActiveOT]} />
               <Text style={[styles.dotBtnText, activeTab === 'OT' && styles.dotBtnTextActiveOT]}>
-                {lang === 'fr' ? 'Ancien Testament' : 'Old Testament'}
+                {otLabel}
               </Text>
             </TouchableOpacity>
             <View style={styles.dotSeparator} />
             <TouchableOpacity style={styles.dotBtn} onPress={goToNT} activeOpacity={0.7}>
               <View style={[styles.dot, activeTab === 'NT' && styles.dotActiveNT]} />
               <Text style={[styles.dotBtnText, activeTab === 'NT' && styles.dotBtnTextActiveNT]}>
-                {lang === 'fr' ? 'Nouveau Testament' : 'New Testament'}
+                {ntLabel}
               </Text>
             </TouchableOpacity>
           </View>
@@ -408,7 +421,7 @@ export default function LivresScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* ── Livres correspondants ── */}
+        {/* Livres correspondants */}
         {filteredOT.length > 0 && (
           <>
             <SectionHeader label={otLabel} isOT={true} />
@@ -437,13 +450,13 @@ export default function LivresScreen() {
           </View>
         )}
 
-        {/* ── Résultats versets ── */}
+        {/* Résultats versets */}
         {isFullTextSearch && (
           <>
             <View style={styles.sectionHeader}>
               <View style={[styles.sectionLine, { backgroundColor: '#8B6540' }]} />
               <Text style={[styles.sectionLabel, { color: '#8B6540' }]}>
-                {lang === 'fr' ? 'Versets' : 'Verses'}
+                {l(lang, 'Versets', 'Verses', 'Andininy')}
               </Text>
               <View style={[styles.sectionLine, { backgroundColor: '#8B6540' }]} />
             </View>
@@ -462,22 +475,27 @@ export default function LivresScreen() {
                 ))}
                 {verseResults.length === 50 && (
                   <Text style={styles.limitNote}>
-                    {lang === 'fr' ? '50 résultats affichés — affinez votre recherche' : '50 results shown — refine your search'}
+                    {l(
+                      lang,
+                      '50 résultats affichés — affinez votre recherche',
+                      '50 results shown — refine your search',
+                      'Vokatra 50 no asehana — azorarao ny fitadiavana'
+                    )}
                   </Text>
                 )}
               </>
             ) : (
               <Text style={styles.noResult}>
-                {lang === 'fr' ? 'Aucun verset trouvé' : 'No verse found'}
+                {l(lang, 'Aucun verset trouvé', 'No verse found', 'Tsy nisy andininy hita')}
               </Text>
             )}
           </>
         )}
 
-        {/* ── Aucun résultat du tout ── */}
+        {/* Aucun résultat du tout */}
         {!isFullTextSearch && filteredOT.length === 0 && filteredNT.length === 0 && (
           <Text style={styles.noResult}>
-            {lang === 'fr' ? 'Aucun livre trouvé' : 'No book found'}
+            {l(lang, 'Aucun livre trouvé', 'No book found', 'Tsy nisy boky hita')}
           </Text>
         )}
       </ScrollView>
@@ -485,7 +503,7 @@ export default function LivresScreen() {
   );
 }
 
-//Styles──────────────────
+// Styles
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'wheat',
